@@ -2,6 +2,13 @@ import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
+sanity_check_seeds = [
+    "I woke up early this morning in order to",
+    "After a particularly warm day, the sun finally began to set. I felt relieved because",
+    "When I had attained the age of seventeen my parents resolved that I should become a student at the university of Ingolstadt. I had hitherto attended the schools of Geneva, but ",  # From Frankenstein
+    "No man prefers to sleep two in a bed. In fact, you would a good deal rather not sleep with your own brother. I don’t know how it is, but people like to be private when they are sleeping. And when",  # From Moby Dick
+]
+
 
 class ImpersonateTrainer:
     def __init__(
@@ -39,10 +46,11 @@ class ImpersonateTrainer:
             )
             loss.backward()
             self.optimizer.step()
-            self.scheduler.step()  # Intentionally update per step rather than per epoch
-            print(f"loss = {loss.item()}")
-            print(f"self.scheduler.get_last_lr() = {self.scheduler.get_last_lr()}")
-            print(80 * "-")
+            self.scheduler.step()  # Intentionally update per batch rather than per epoch
+
+            # print(f"loss = {loss.item()}")
+            # print(f"self.scheduler.get_last_lr() = {self.scheduler.get_last_lr()}")
+            # print(80 * "-")
 
     def eval_one_epoch(self):
         self.model.eval()
@@ -73,16 +81,4 @@ class ImpersonateTrainer:
         pass
 
 
-# TODO: create a small (e.g. 5 examples) test suite of sentences to generate and print during evaluation loop.
-# This helps visualize and get a sense of how the model evolves over time.
-# Set temperature very low, so that it's (near) deterministic
-
-
 # TODO: add MLflow
-
-
-# Author's to add:
-# - Twain
-# - Orwell
-# - Fitzgerald
-# - Dostoevsky
