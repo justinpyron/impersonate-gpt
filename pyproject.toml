@@ -17,6 +17,7 @@ transformers = "^4.47.1"
 tokenizers = "^0.21.0"
 accelerate = "^1.2.1"
 evaluate = "^0.4.3"
+pre-commit = "^4.0.1"
 
 
 [build-system]
