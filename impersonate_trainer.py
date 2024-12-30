@@ -58,10 +58,14 @@ class ImpersonateTrainer:
                 )
                 print(f"loss = {loss.item()}")
 
-    def save(self) -> None:
+    def save(self, path: str) -> None:
         """Save state dicts of model, optimizer, and scheduler"""
-        # TODO: Move to CPU before saving
-        pass
+        checkpoint = {
+            "model": {k: v.cpu() for k, v in self.model.state_dict().items()},
+            "optimizer": self.optimizer.state_dict(),
+            "scheduler": self.scheduler.state_dict(),
+        }
+        torch.save(checkpoint, path)
 
     def launch(
         num_steps: int,
