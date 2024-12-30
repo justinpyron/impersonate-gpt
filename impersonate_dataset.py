@@ -23,7 +23,7 @@ def make_chunks(
     return chunks
 
 
-class ImposterDataset(Dataset):
+class ImpersonateDataset(Dataset):
     def __init__(
         self,
         file_paths: str,
