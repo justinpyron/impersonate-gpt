@@ -14,7 +14,7 @@ MODEL_CARD = "openai-community/gpt2"
 CHARACTERS_PER_CHUNK = 2000  # GPT2 max sequence length = 1024 tokens
 BATCH_SIZE = 8
 # Training params
-MAX_LR = 1e-4
+MAX_LR = 6e-5
 WARMUP_STEPS = 200
 WARM_UP_START_FACTOR = 1e-2
 GAMMA = 0.999
