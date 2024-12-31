@@ -161,7 +161,7 @@ class ImpersonateTrainer:
             "optimizer": self.optimizer.state_dict(),
             "scheduler": self.scheduler.state_dict(),
         }
-        torch.save(checkpoint, f"{self.name}_{self.timestamp}.pt")
+        torch.save(checkpoint, f"checkpoint_{self.name}_{self.timestamp}.pt")
 
     def launch(
         self,
