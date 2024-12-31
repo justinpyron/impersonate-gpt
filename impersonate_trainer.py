@@ -31,6 +31,7 @@ class ImpersonateTrainer:
         eval_loader: DataLoader,
         name: str,
         loss_ignore_token: int,
+        print_every: int,
     ) -> None:
         self.model = model
         self.optimizer = optimizer
@@ -39,6 +40,7 @@ class ImpersonateTrainer:
         self.eval_loader = eval_loader
         self.name = name
         self.loss_ignore_token = loss_ignore_token
+        self.print_every = print_every
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model.to(self.device)
         self.loss_log_train = list()
@@ -48,7 +50,9 @@ class ImpersonateTrainer:
         """Execute one full training epoch"""
         self.model.train()
         loss_log = list()
-        for data, target in self.train_loader:
+        for i, (data, target) in enumerate(self.train_loader):
+            if i > 20:  # TODO: delete
+                break
             data, target = data.to(self.device), target.to(self.device)
             self.optimizer.zero_grad()
             logits = self.model(data).logits
@@ -62,12 +66,15 @@ class ImpersonateTrainer:
             loss.backward()
             self.optimizer.step()
             self.scheduler.step()  # Intentionally update per batch rather than per epoch
+            self.print_progress(i, loss_log, True, 5)
         self.loss_log_train.append(np.array(loss_log).mean())
 
-    def eval_one_epoch(self):
+    def eval_one_epoch(self) -> None:
         self.model.eval()
         loss_log = list()
-        for data, target in self.eval_loader:
+        for i, (data, target) in enumerate(self.eval_loader):
+            if i > 20:  # TODO: delete
+                break
             data, target = data.to(self.device), target.to(self.device)
             with torch.no_grad():
                 logits = self.model(data).logits
@@ -77,8 +84,21 @@ class ImpersonateTrainer:
                     target.view(B * T),
                     ignore_index=self.loss_ignore_token,
                 )
-                loss_log.append(loss.item())
+            loss_log.append(loss.item())
+            self.print_progress(i, loss_log, False, 5)
         self.loss_log_eval.append(np.array(loss_log).mean())
+
+    def print_progress(
+        self,
+        iteration: int,
+        loss_log: list[float],
+        is_train: bool,
+        ma_size: int,
+    ) -> None:
+        if iteration % self.print_every == 0:
+            mode = "Train" if is_train else "Eval"
+            moving_avg = np.array(loss_log[-ma_size:]).mean()
+            logger.info(f"Batch {iteration:4} | {mode:5} loss = {moving_avg:.2f}")
 
     def save(self) -> None:
         """Save state dicts of model, optimizer, and scheduler"""
@@ -100,7 +120,10 @@ class ImpersonateTrainer:
             loss_train = self.loss_log_train[-1]
             loss_eval = self.loss_log_eval[-1]
             logger.info(
-                f"Epoch {i:2} | Train loss = {loss_train:.3f} | Eval loss = {loss_eval:.3f}"
+                f"Epoch {i:2} | "
+                f"Train loss = {loss_train:.3f} | "
+                f"Eval  loss = {loss_eval:.3f}"
+                f"\n{'-'*80}"
             )
             if loss_eval < best_loss:
                 self.save()
