@@ -146,6 +146,9 @@ class ImpersonateTrainer:
                     pad_token_id=self.pad_token_id,
                 )
                 out_str = self.tokenizer.decode(out_tokens[0].tolist())
+                out_str = "\n".join(
+                    out_str[i : i + 80] for i in range(0, len(out_str), 80)
+                )
                 self.generation_logger.info(f"Example {i:2}\n{out_str}")
         self.model.train()
 
