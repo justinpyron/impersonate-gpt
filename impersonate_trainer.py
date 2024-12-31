@@ -6,8 +6,9 @@ import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
+timestamp = datetime.now().strftime("%Y%m%dT%H%M")
 logging.basicConfig(
-    filename=f"train_{datetime.now().strftime('%Y-%m-%dT%H_%M')}.log",
+    filename=f"train_{timestamp}.log",
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
 )
@@ -28,7 +29,7 @@ class ImpersonateTrainer:
         scheduler,
         train_loader: DataLoader,
         eval_loader: DataLoader,
-        save_path: str,
+        name: str,
         loss_ignore_token: int,
     ) -> None:
         self.model = model
@@ -36,7 +37,7 @@ class ImpersonateTrainer:
         self.scheduler = scheduler
         self.train_loader = train_loader
         self.eval_loader = eval_loader
-        self.save_path = save_path
+        self.name = name
         self.loss_ignore_token = loss_ignore_token
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model.to(self.device)
@@ -86,7 +87,7 @@ class ImpersonateTrainer:
             "optimizer": self.optimizer.state_dict(),
             "scheduler": self.scheduler.state_dict(),
         }
-        torch.save(checkpoint, self.save_path)
+        torch.save(checkpoint, "{self.name}_{timestamp}.pt")
 
     def launch(
         self,
