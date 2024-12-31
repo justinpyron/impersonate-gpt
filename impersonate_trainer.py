@@ -7,13 +7,6 @@ import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
-timestamp = datetime.now().strftime("%Y%m%dT%H%M")
-logging.basicConfig(
-    filename=f"train_{timestamp}.log",
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-)
-logger = logging.getLogger(__name__)
 sanity_check_seeds = [
     "I woke up early this morning in order to",
     "After a particularly warm day, the sun finally began to set. I felt relieved because",
@@ -22,40 +15,64 @@ sanity_check_seeds = [
 ]
 
 
+def make_logger(
+    name: str,
+    filename: str,
+) -> logging.Logger:
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.INFO)
+    handler = logging.FileHandler(filename)
+    formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+    return logger
+
+
 class ImpersonateTrainer:
     def __init__(
         self,
         model: torch.nn.Module,
+        tokenizer,
         optimizer,
         scheduler,
         train_loader: DataLoader,
         eval_loader: DataLoader,
         name: str,
-        loss_ignore_token: int,
+        pad_token_id: int,
         print_every: int,
+        generate_every: int,
         short_circuit: int = np.inf,
     ) -> None:
         self.model = model
+        self.tokenizer = tokenizer
         self.optimizer = optimizer
         self.scheduler = scheduler
         self.train_loader = train_loader
         self.eval_loader = eval_loader
         self.name = name
-        self.loss_ignore_token = loss_ignore_token
+        self.pad_token_id = pad_token_id
         self.print_every = print_every
+        self.generate_every = generate_every
         self.short_circuit = short_circuit
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model.to(self.device)
         self.loss_log_train = list()
         self.loss_log_eval = list()
         self.birth = time.time()
+        self.timestamp = datetime.now().strftime("%Y%m%dT%H%M")
+        self.train_logger = make_logger(
+            "train", f"logs/{self.name}_{self.timestamp}_train.log"
+        )
+        self.generation_logger = make_logger(
+            "generation", f"logs/{self.name}_{self.timestamp}_generation.log"
+        )
 
     def train_one_epoch(self) -> None:
         """Execute one full training epoch"""
         self.model.train()
         loss_log = list()
         for i, (data, target) in enumerate(self.train_loader):
-            if i > self.short_circuit:
+            if i >= self.short_circuit:
                 break
             data, target = data.to(self.device), target.to(self.device)
             self.optimizer.zero_grad()
@@ -64,20 +81,21 @@ class ImpersonateTrainer:
             loss = F.cross_entropy(
                 logits.view(B * T, C),
                 target.view(B * T),
-                ignore_index=self.loss_ignore_token,
+                ignore_index=self.pad_token_id,
             )
             loss_log.append(loss.item())
             loss.backward()
             self.optimizer.step()
             self.scheduler.step()  # Intentionally update per batch rather than per epoch
             self.print_progress(i, loss_log, True)
+            self.generation_progress(i)
         self.loss_log_train.append(np.array(loss_log).mean())
 
     def eval_one_epoch(self) -> None:
         self.model.eval()
         loss_log = list()
         for i, (data, target) in enumerate(self.eval_loader):
-            if i > self.short_circuit:
+            if i >= self.short_circuit:
                 break
             data, target = data.to(self.device), target.to(self.device)
             with torch.no_grad():
@@ -86,7 +104,7 @@ class ImpersonateTrainer:
                 loss = F.cross_entropy(
                     logits.view(B * T, C),
                     target.view(B * T),
-                    ignore_index=self.loss_ignore_token,
+                    ignore_index=self.pad_token_id,
                 )
             loss_log.append(loss.item())
             self.print_progress(i, loss_log, False)
@@ -107,11 +125,29 @@ class ImpersonateTrainer:
         if iteration % self.print_every == 0:
             mode = "Train" if is_train else "Eval"
             moving_avg = np.array(loss_log[-ma_size:]).mean()
-            logger.info(
+            self.train_logger.info(
                 f"Batch {iteration:4} | "
                 f"Stopwatch = {self.stopwatch():5.1f} min | "
                 f"{mode:5} loss = {moving_avg:5.2f}"
             )
+
+    def generation_progress(self, iteration: int) -> None:
+        self.model.eval()
+        if iteration % self.generate_every == 0:
+            self.generation_logger.info(
+                f"Batch {iteration:4} | " f"Stopwatch = {self.stopwatch():5.1f} min"
+            )
+            for i, seed in enumerate(sanity_check_seeds):
+                out_tokens = self.model.generate(
+                    **self.tokenizer(seed, return_tensors="pt"),
+                    max_new_tokens=100,
+                    do_sample=True,
+                    temperature=1,
+                    pad_token_id=self.pad_token_id,
+                )
+                out_str = self.tokenizer.decode(out_tokens[0].tolist())
+                self.generation_logger.info(f"Example {i:2}\n{out_str}")
+        self.model.train()
 
     def save(self) -> None:
         """Save state dicts of model, optimizer, and scheduler"""
@@ -120,7 +156,7 @@ class ImpersonateTrainer:
             "optimizer": self.optimizer.state_dict(),
             "scheduler": self.scheduler.state_dict(),
         }
-        torch.save(checkpoint, f"{self.name}_{timestamp}.pt")
+        torch.save(checkpoint, f"{self.name}_{self.timestamp}.pt")
 
     def launch(
         self,
@@ -132,12 +168,13 @@ class ImpersonateTrainer:
             self.eval_one_epoch()
             loss_train = self.loss_log_train[-1]
             loss_eval = self.loss_log_eval[-1]
-            logger.info(
+            self.train_logger.info(
                 f"Epoch {i:2} | "
                 f"Train loss = {loss_train:.3f} | "
                 f"Eval  loss = {loss_eval:.3f}"
                 f"\n{'-'*80}"
             )
+            self.generation_logger.info(f"End epoch {i:2}\n{'-'*80}")
             if loss_eval < best_loss:
                 self.save()
                 best_loss = loss_eval
