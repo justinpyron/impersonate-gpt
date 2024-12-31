@@ -14,10 +14,10 @@ MODEL_CARD = "openai-community/gpt2"
 CHARACTERS_PER_CHUNK = 2000  # GPT2 max sequence length = 1024 tokens
 BATCH_SIZE = 8
 # Training params
-MAX_LR = 6e-5
+MAX_LR = 1e-5
 WARMUP_STEPS = 200
 WARM_UP_START_FACTOR = 1e-2
-GAMMA = 0.999
+GAMMA = 0.9995
 PRINT_EVERY = 20
 GENERATE_EVERY = 100
 SHORT_CIRCUIT = 99999
@@ -103,8 +103,8 @@ def get_trainer(config):
 
 
 if __name__ == "__main__":
-    config = configs["fitzgerald"]
-    # config = configs["twain"]
+    # config = configs["fitzgerald"]
+    config = configs["twain"]
     trainer = get_trainer(config)
     trainer.launch(NUM_EPOCHS)
 
