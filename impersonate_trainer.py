@@ -33,6 +33,7 @@ class ImpersonateTrainer:
         name: str,
         loss_ignore_token: int,
         print_every: int,
+        short_circuit: int = np.inf,
     ) -> None:
         self.model = model
         self.optimizer = optimizer
@@ -42,6 +43,7 @@ class ImpersonateTrainer:
         self.name = name
         self.loss_ignore_token = loss_ignore_token
         self.print_every = print_every
+        self.short_circuit = short_circuit
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model.to(self.device)
         self.loss_log_train = list()
@@ -53,7 +55,7 @@ class ImpersonateTrainer:
         self.model.train()
         loss_log = list()
         for i, (data, target) in enumerate(self.train_loader):
-            if i > 10:  # TODO: delete
+            if i > self.short_circuit:
                 break
             data, target = data.to(self.device), target.to(self.device)
             self.optimizer.zero_grad()
@@ -68,14 +70,14 @@ class ImpersonateTrainer:
             loss.backward()
             self.optimizer.step()
             self.scheduler.step()  # Intentionally update per batch rather than per epoch
-            self.print_progress(i, loss_log, True, 5)
+            self.print_progress(i, loss_log, True)
         self.loss_log_train.append(np.array(loss_log).mean())
 
     def eval_one_epoch(self) -> None:
         self.model.eval()
         loss_log = list()
         for i, (data, target) in enumerate(self.eval_loader):
-            if i > 10:  # TODO: delete
+            if i > self.short_circuit:
                 break
             data, target = data.to(self.device), target.to(self.device)
             with torch.no_grad():
@@ -87,7 +89,7 @@ class ImpersonateTrainer:
                     ignore_index=self.loss_ignore_token,
                 )
             loss_log.append(loss.item())
-            self.print_progress(i, loss_log, False, 5)
+            self.print_progress(i, loss_log, False)
         self.loss_log_eval.append(np.array(loss_log).mean())
 
     def stopwatch(self) -> float:
@@ -100,7 +102,7 @@ class ImpersonateTrainer:
         iteration: int,
         loss_log: list[float],
         is_train: bool,
-        ma_size: int,
+        ma_size: int = 20,
     ) -> None:
         if iteration % self.print_every == 0:
             mode = "Train" if is_train else "Eval"
