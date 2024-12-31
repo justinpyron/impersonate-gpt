@@ -1,7 +1,17 @@
+import logging
+from datetime import datetime
+
+import numpy as np
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
+logging.basicConfig(
+    filename=f"train_{datetime.now().strftime('%Y-%m-%dT%H_%M')}.log",
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger(__name__)
 sanity_check_seeds = [
     "I woke up early this morning in order to",
     "After a particularly warm day, the sun finally began to set. I felt relieved because",
@@ -30,10 +40,13 @@ class ImpersonateTrainer:
         self.loss_ignore_token = loss_ignore_token
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model.to(self.device)
+        self.loss_log_train = list()
+        self.loss_log_eval = list()
 
     def train_one_epoch(self) -> None:
         """Execute one full training epoch"""
         self.model.train()
+        loss_log = list()
         for data, target in self.train_loader:
             data, target = data.to(self.device), target.to(self.device)
             self.optimizer.zero_grad()
@@ -44,16 +57,15 @@ class ImpersonateTrainer:
                 target.view(B * T),
                 ignore_index=self.loss_ignore_token,
             )
+            loss_log.append(loss.item())
             loss.backward()
             self.optimizer.step()
             self.scheduler.step()  # Intentionally update per batch rather than per epoch
-
-            # print(f"loss = {loss.item()}")
-            # print(f"self.scheduler.get_last_lr() = {self.scheduler.get_last_lr()}")
-            # print(80 * "-")
+        self.loss_log_train.append(np.array(loss_log).mean())
 
     def eval_one_epoch(self):
         self.model.eval()
+        loss_log = list()
         for data, target in self.eval_loader:
             data, target = data.to(self.device), target.to(self.device)
             with torch.no_grad():
@@ -64,21 +76,31 @@ class ImpersonateTrainer:
                     target.view(B * T),
                     ignore_index=self.loss_ignore_token,
                 )
-                print(f"loss = {loss.item()}")
+                loss_log.append(loss.item())
+        self.loss_log_eval.append(np.array(loss_log).mean())
 
-    def save(self, path: str) -> None:
+    def save(self) -> None:
         """Save state dicts of model, optimizer, and scheduler"""
         checkpoint = {
             "model": {k: v.cpu() for k, v in self.model.state_dict().items()},
             "optimizer": self.optimizer.state_dict(),
             "scheduler": self.scheduler.state_dict(),
         }
-        torch.save(checkpoint, path)
+        torch.save(checkpoint, self.save_path)
 
     def launch(
-        num_steps: int,
+        self,
+        num_epochs: int,
     ) -> None:
-        pass
-
-
-# TODO: add MLflow
+        best_loss = np.inf
+        for i in range(num_epochs):
+            self.train_one_epoch()
+            self.eval_one_epoch()
+            loss_train = self.loss_log_train[-1]
+            loss_eval = self.loss_log_eval[-1]
+            logger.info(
+                f"Epoch {i:2} | Train loss = {loss_train:.3f} | Eval loss = {loss_eval:.3f}"
+            )
+            if loss_eval < best_loss:
+                self.save()
+                best_loss = loss_eval
