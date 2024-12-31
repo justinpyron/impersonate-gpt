@@ -124,9 +124,10 @@ class ImpersonateTrainer:
     ) -> None:
         if iteration % self.print_every == 0:
             mode = "Train" if is_train else "Eval"
+            num_batches = len(self.train_loader) if is_train else len(self.eval_loader)
             moving_avg = np.array(loss_log[-ma_size:]).mean()
             self.train_logger.info(
-                f"Batch {iteration:4} / {len(self.train_loader)} | "
+                f"Batch {iteration:4} / {num_batches} | "
                 f"Stopwatch = {self.stopwatch():5.1f} min | "
                 f"{mode:5} loss = {moving_avg:5.2f}"
             )
@@ -138,8 +139,9 @@ class ImpersonateTrainer:
                 f"Batch {iteration:4} | " f"Stopwatch = {self.stopwatch():5.1f} min"
             )
             for i, seed in enumerate(sanity_check_seeds):
+                in_tokens = self.tokenizer(seed, return_tensors="pt")["input_ids"]
                 out_tokens = self.model.generate(
-                    **self.tokenizer(seed, return_tensors="pt"),
+                    in_tokens.to(self.device),
                     max_new_tokens=100,
                     do_sample=True,
                     temperature=1,
@@ -159,7 +161,7 @@ class ImpersonateTrainer:
             "optimizer": self.optimizer.state_dict(),
             "scheduler": self.scheduler.state_dict(),
         }
-        torch.save(checkpoint, f"{self.name}_{self.timestamp}.pt")
+        torch.save(checkpoint, f"checkpoint_{self.name}_{self.timestamp}.pt")
 
     def launch(
         self,

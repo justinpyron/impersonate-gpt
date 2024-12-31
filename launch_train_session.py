@@ -12,17 +12,16 @@ from train_configs import configs
 MODEL_CARD = "openai-community/gpt2"
 # Data params
 CHARACTERS_PER_CHUNK = 2000  # GPT2 max sequence length = 1024 tokens
-BATCH_SIZE = 4
-
+BATCH_SIZE = 8
 # Training params
-MAX_LR = 1e-4
-WARMUP_STEPS = 1000
+MAX_LR = 1e-5
+WARMUP_STEPS = 200
 WARM_UP_START_FACTOR = 1e-2
 GAMMA = 0.9995
-PRINT_EVERY = 2
-GENERATE_EVERY = 8
-SHORT_CIRCUIT = 8
-NUM_EPOCHS = 2
+PRINT_EVERY = 20
+GENERATE_EVERY = 100
+SHORT_CIRCUIT = 99999
+NUM_EPOCHS = 10
 
 
 def collate(example, pad_token_id):
@@ -104,6 +103,8 @@ def get_trainer(config):
 
 
 if __name__ == "__main__":
-    config = configs["fitzgerald"]
+    # config = configs["fitzgerald"]
+    config = configs["twain"]
     trainer = get_trainer(config)
     trainer.launch(NUM_EPOCHS)
+
