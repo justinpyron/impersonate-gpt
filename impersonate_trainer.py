@@ -138,8 +138,9 @@ class ImpersonateTrainer:
                 f"Batch {iteration:4} | " f"Stopwatch = {self.stopwatch():5.1f} min"
             )
             for i, seed in enumerate(sanity_check_seeds):
+                in_tokens = self.tokenizer(seed, return_tensors="pt")["input_ids"]
                 out_tokens = self.model.generate(
-                    **self.tokenizer(seed, return_tensors="pt"),
+                    in_tokens.to(self.device),
                     max_new_tokens=100,
                     do_sample=True,
                     temperature=1,
