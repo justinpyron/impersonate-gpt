@@ -126,7 +126,7 @@ class ImpersonateTrainer:
             mode = "Train" if is_train else "Eval"
             moving_avg = np.array(loss_log[-ma_size:]).mean()
             self.train_logger.info(
-                f"Batch {iteration:4} | "
+                f"Batch {iteration:4} / {len(self.train_loader)} | "
                 f"Stopwatch = {self.stopwatch():5.1f} min | "
                 f"{mode:5} loss = {moving_avg:5.2f}"
             )
