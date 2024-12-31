@@ -124,9 +124,10 @@ class ImpersonateTrainer:
     ) -> None:
         if iteration % self.print_every == 0:
             mode = "Train" if is_train else "Eval"
+            num_batches = len(self.train_loader) if is_train else len(self.eval_loader)
             moving_avg = np.array(loss_log[-ma_size:]).mean()
             self.train_logger.info(
-                f"Batch {iteration:4} / {len(self.train_loader)} | "
+                f"Batch {iteration:4} / {num_batches} | "
                 f"Stopwatch = {self.stopwatch():5.1f} min | "
                 f"{mode:5} loss = {moving_avg:5.2f}"
             )
