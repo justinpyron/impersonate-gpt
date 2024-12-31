@@ -1,4 +1,5 @@
 import logging
+import time
 from datetime import datetime
 
 import numpy as np
@@ -45,13 +46,14 @@ class ImpersonateTrainer:
         self.model.to(self.device)
         self.loss_log_train = list()
         self.loss_log_eval = list()
+        self.birth = time.time()
 
     def train_one_epoch(self) -> None:
         """Execute one full training epoch"""
         self.model.train()
         loss_log = list()
         for i, (data, target) in enumerate(self.train_loader):
-            if i > 20:  # TODO: delete
+            if i > 10:  # TODO: delete
                 break
             data, target = data.to(self.device), target.to(self.device)
             self.optimizer.zero_grad()
@@ -73,7 +75,7 @@ class ImpersonateTrainer:
         self.model.eval()
         loss_log = list()
         for i, (data, target) in enumerate(self.eval_loader):
-            if i > 20:  # TODO: delete
+            if i > 10:  # TODO: delete
                 break
             data, target = data.to(self.device), target.to(self.device)
             with torch.no_grad():
@@ -88,6 +90,11 @@ class ImpersonateTrainer:
             self.print_progress(i, loss_log, False, 5)
         self.loss_log_eval.append(np.array(loss_log).mean())
 
+    def stopwatch(self) -> float:
+        """Return time elapsed since inception in minutes"""
+        time_elapsed = time.time() - self.birth
+        return time_elapsed / 60
+
     def print_progress(
         self,
         iteration: int,
@@ -98,7 +105,11 @@ class ImpersonateTrainer:
         if iteration % self.print_every == 0:
             mode = "Train" if is_train else "Eval"
             moving_avg = np.array(loss_log[-ma_size:]).mean()
-            logger.info(f"Batch {iteration:4} | {mode:5} loss = {moving_avg:.2f}")
+            logger.info(
+                f"Batch {iteration:4} | "
+                f"Stopwatch = {self.stopwatch():5.1f} min | "
+                f"{mode:5} loss = {moving_avg:5.2f}"
+            )
 
     def save(self) -> None:
         """Save state dicts of model, optimizer, and scheduler"""
@@ -107,7 +118,7 @@ class ImpersonateTrainer:
             "optimizer": self.optimizer.state_dict(),
             "scheduler": self.scheduler.state_dict(),
         }
-        torch.save(checkpoint, "{self.name}_{timestamp}.pt")
+        torch.save(checkpoint, f"{self.name}_{timestamp}.pt")
 
     def launch(
         self,
