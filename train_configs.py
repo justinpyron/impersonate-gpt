@@ -27,17 +27,15 @@ config_dostoevsky = ImpersonateConfig(
         "data/dostoevsky-notes_from_the_underground.txt",
         "data/dostoevsky-the_gambler.txt",
     ],
-    files_eval=[
-        "data/dostoevsky-the_idiot.txt",
-    ],
+    files_eval=["data/dostoevsky-the_idiot.txt"],
 )
 
 config_twain = ImpersonateConfig(
     name="twain",
     files_train=[
-        "data/twain-connecticut_yankee_king_arthurs_court.txt"
-        "data/twain-the_prince_and_the_pauper.txt"
-        "data/twain-tom_sawyer.txt"
+        "data/twain-connecticut_yankee_king_arthurs_court.txt",
+        "data/twain-the_prince_and_the_pauper.txt",
+        "data/twain-tom_sawyer.txt",
     ],
     files_eval=["data/twain-huckleberry_finn.txt"],
 )
