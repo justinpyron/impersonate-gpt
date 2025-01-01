@@ -53,27 +53,27 @@ def health_check():
 
 @app.route("/gpt2", methods=["POST"])
 def gpt2() -> str:
-    return serve()
+    return jsonify({"generated_text": serve()})
 
 
 @app.route("/darwin", methods=["POST"])
 def darwin() -> str:
-    return serve(WEIGHTS_DARWIN)
+    return jsonify({"generated_text": serve(WEIGHTS_DARWIN)})
 
 
 @app.route("/dostoevsky", methods=["POST"])
 def dostoevsky() -> str:
-    return serve(WEIGHTS_DOSTOEVSKY)
+    return jsonify({"generated_text": serve(WEIGHTS_DOSTOEVSKY)})
 
 
 @app.route("/fitzgerald", methods=["POST"])
 def fitzgerald() -> str:
-    return serve(WEIGHTS_FITZGERALD)
+    return jsonify({"generated_text": serve(WEIGHTS_FITZGERALD)})
 
 
 @app.route("/twain", methods=["POST"])
 def twain() -> str:
-    return serve(WEIGHTS_TWAIN)
+    return jsonify({"generated_text": serve(WEIGHTS_TWAIN)})
 
 
 if __name__ == "__main__":
