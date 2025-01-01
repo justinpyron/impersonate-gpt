@@ -53,7 +53,8 @@ config_twain = ImpersonateConfig(
 )
 
 configs = {
-    "fitzgerald": config_fitzgerald,
+    "darwin": config_darwin,
     "dostoevsky": config_dostoevsky,
+    "fitzgerald": config_fitzgerald,
     "twain": config_twain,
 }
