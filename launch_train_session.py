@@ -104,7 +104,9 @@ def get_trainer(config):
 
 if __name__ == "__main__":
     # config = configs["fitzgerald"]
-    config = configs["twain"]
+    # config = configs["twain"]
+    # config = configs["darwin"]
+    config = configs["dostoevsky"]
     trainer = get_trainer(config)
     trainer.launch(NUM_EPOCHS)
 
