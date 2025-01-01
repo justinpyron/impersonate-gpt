@@ -1,3 +1,4 @@
+import requests
 import streamlit as st
 
 WRITERS = [
@@ -34,3 +35,14 @@ if num_writers > 0:
             with st.container(border=True):
                 st.markdown(f"#### {writer} says...")
                 st.markdown(sample_text)
+
+if st.button(label="Execute"):
+    response = requests.post(
+        url="https://simple-translate-623148967155.us-central1.run.app/translate",
+        headers={"Content-Type": "application/json"},
+        json={
+            "text": text_seed,
+            "temperature": 0.2,
+        },
+    )
+    st.write(response.json()["translation"])
