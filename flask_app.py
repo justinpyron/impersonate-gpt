@@ -15,11 +15,12 @@ app = Flask(__name__)
 tokenizer = AutoTokenizer.from_pretrained(MODEL_CARD)
 
 
-def load_model(weights_path: str) -> torch.nn.Module:
-    return AutoModelForCausalLM.from_pretrained(
-        MODEL_CARD,
-        state_dict=torch.load(weights_path, weights_only=True),
-    )
+def load_model(weights_path: str = None) -> torch.nn.Module:
+    if weights_path is None:
+        state_dict = None
+    else:
+        state_dict = torch.load(weights_path, weights_only=True)
+    return AutoModelForCausalLM.from_pretrained(MODEL_CARD, state_dict=state_dict)
 
 
 def generate(
@@ -38,41 +39,41 @@ def generate(
     return tokenizer.decode(out[0].tolist())
 
 
+def serve(weights_path: str = None) -> str:
+    data = request.get_json()
+    model = load_model(weights_path)
+    out = generate(model, data["text"], data["temperature"], data["num_tokens"])
+    return out
+
+
 @app.route("/health")
 def health_check():
     return jsonify({"status": "Server is running."})
 
 
+@app.route("/gpt2", methods=["POST"])
+def gpt2() -> str:
+    return serve()
+
+
 @app.route("/darwin", methods=["POST"])
 def darwin() -> str:
-    data = request.get_json()
-    model = load_model(WEIGHTS_DARWIN)
-    out = generate(model, data["text"], data["temperature"], data["num_tokens"])
-    return out
+    return serve(WEIGHTS_DARWIN)
 
 
 @app.route("/dostoevsky", methods=["POST"])
 def dostoevsky() -> str:
-    data = request.get_json()
-    model = load_model(WEIGHTS_DOSTOEVSKY)
-    out = generate(model, data["text"], data["temperature"], data["num_tokens"])
-    return out
+    return serve(WEIGHTS_DOSTOEVSKY)
 
 
 @app.route("/fitzgerald", methods=["POST"])
 def fitzgerald() -> str:
-    data = request.get_json()
-    model = load_model(WEIGHTS_FITZGERALD)
-    out = generate(model, data["text"], data["temperature"], data["num_tokens"])
-    return out
+    return serve(WEIGHTS_FITZGERALD)
 
 
 @app.route("/twain", methods=["POST"])
 def twain() -> str:
-    data = request.get_json()
-    model = load_model(WEIGHTS_TWAIN)
-    out = generate(model, data["text"], data["temperature"], data["num_tokens"])
-    return out
+    return serve(WEIGHTS_TWAIN)
 
 
 if __name__ == "__main__":
