@@ -45,6 +45,26 @@ st.set_page_config(page_title="ImpersonateGPT", layout="centered", page_icon="�
 st.title("ImpersonateGPT 🥸")
 with st.expander("What is this app?"):
     st.markdown(WHAT_IS_THIS_APP)
+footer_html = """
+    <style>
+        .footer {
+            position: fixed;
+            left: 0;
+            bottom: 0;
+            width: 100%;
+            height: 35px;
+            color: white;
+            background-color: #262730;
+            text-align: center;
+            padding: 2px;
+            opacity: 1;
+        }
+    </style>
+    <div class="footer">
+        <p>⚠️ It may take up to two minutes for the inference server to start after the first 'Generate text' button click.</p>
+    </div>
+"""
+st.markdown(footer_html, unsafe_allow_html=True)
 
 with st.form("inputs", enter_to_submit=False, border=False):
     text_seed = st.text_area(
@@ -52,7 +72,7 @@ with st.form("inputs", enter_to_submit=False, border=False):
         "",
         help="The app will generate text starting from what you enter here",
     )
-    col1, col2, col3 = st.columns([3, 1, 1])
+    col1, col2 = st.columns([3, 2])
     with col1:
         selected_writers = st.segmented_control(
             "Writers to mimic",
@@ -64,24 +84,26 @@ with st.form("inputs", enter_to_submit=False, border=False):
             w for w in WRITERS if w in selected_writers
         ]  # Preserve order
     with col2:
-        temperature = st.slider(
-            "Temperature",
-            min_value=0.1,
-            max_value=2.0,
-            step=0.1,
-            value=1.0,
-            help="Controls randomness of generated text. Lower values are less random.",
-        )
-    with col3:
-        num_tokens = st.slider(
-            "Number of tokens",
-            min_value=10,
-            max_value=200,
-            step=10,
-            value=80,
-            help="The number of tokens to generate",
-        )
-    submitted = st.form_submit_button("Generate text", use_container_width=True)
+        with st.expander("Settings"):
+            temperature = st.slider(
+                "Temperature",
+                min_value=0.1,
+                max_value=2.0,
+                step=0.1,
+                value=1.0,
+                help="Controls randomness of generated text. Lower values are less random.",
+            )
+            num_tokens = st.slider(
+                "Number of tokens",
+                min_value=10,
+                max_value=200,
+                step=10,
+                value=80,
+                help="The number of tokens to generate",
+            )
+    submitted = st.form_submit_button(
+        "Generate text", use_container_width=True, type="primary"
+    )
 
 if submitted and len(selected_writers) > 0:
     columns = st.columns(len(selected_writers))
@@ -97,23 +119,4 @@ if submitted and len(selected_writers) > 0:
                         num_tokens,
                     )
                 st.markdown(generated_text)
-
-footer_html = """
-    <style>
-        .footer {
-            position: fixed;
-            left: 0;
-            bottom: 0;
-            width: 100%;
-            height: 35px;
-            color: white;
-            background-color: #262730;
-            text-align: center;
-            padding: 2px;
-        }
-    </style>
-    <div class="footer">
-        <p>⚠️ It may take up to two minutes for the inference server to start after the first 'Generate text' button click.</p>
-    </div>
-"""
 st.markdown(footer_html, unsafe_allow_html=True)
