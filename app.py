@@ -52,13 +52,35 @@ with st.form("inputs", enter_to_submit=False, border=False):
         "",
         help="The app will generate text starting from what you enter here",
     )
-    selected_writers = st.segmented_control(
-        "Writers to mimic",
-        options=WRITERS,
-        selection_mode="multi",
-        help="The writers whose voice to emulate in the generated output",
-    )
-    selected_writers = [w for w in WRITERS if w in selected_writers]  # Preserve order
+    col1, col2, col3 = st.columns([3, 1, 1])
+    with col1:
+        selected_writers = st.segmented_control(
+            "Writers to mimic",
+            options=WRITERS,
+            selection_mode="multi",
+            help="The writers whose voice to emulate in the generated output",
+        )
+        selected_writers = [
+            w for w in WRITERS if w in selected_writers
+        ]  # Preserve order
+    with col2:
+        temperature = st.slider(
+            "Temperature",
+            min_value=0.1,
+            max_value=2.0,
+            step=0.1,
+            value=1.0,
+            help="Controls randomness of generated text. Lower values are less random.",
+        )
+    with col3:
+        num_tokens = st.slider(
+            "Number of tokens",
+            min_value=10,
+            max_value=200,
+            step=10,
+            value=80,
+            help="The number of tokens to generate",
+        )
     submitted = st.form_submit_button("Generate text", use_container_width=True)
 
 if submitted and len(selected_writers) > 0:
@@ -68,5 +90,10 @@ if submitted and len(selected_writers) > 0:
             with st.container(border=True):
                 st.markdown(f"#### {writer} says...")
                 with st.spinner("Computing..."):
-                    generated_text = ping_api(writer.lower(), text_seed)
+                    generated_text = ping_api(
+                        writer.lower(),
+                        text_seed,
+                        temperature,
+                        num_tokens,
+                    )
                 st.markdown(generated_text)
