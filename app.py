@@ -97,3 +97,23 @@ if submitted and len(selected_writers) > 0:
                         num_tokens,
                     )
                 st.markdown(generated_text)
+
+footer_html = """
+    <style>
+        .footer {
+            position: fixed;
+            left: 0;
+            bottom: 0;
+            width: 100%;
+            height: 35px;
+            color: white;
+            background-color: #262730;
+            text-align: center;
+            padding: 2px;
+        }
+    </style>
+    <div class="footer">
+        <p>⚠️ It may take up to two minutes for the inference server to start after the first 'Generate text' button click.</p>
+    </div>
+"""
+st.markdown(footer_html, unsafe_allow_html=True)
