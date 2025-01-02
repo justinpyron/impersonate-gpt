@@ -53,27 +53,27 @@ def health_check():
 
 
 @app.route("/gpt2", methods=["POST"])
-def gpt2() -> str:
+def gpt2():
     return jsonify({"generated_text": serve("gpt2")})
 
 
 @app.route("/darwin", methods=["POST"])
-def darwin() -> str:
+def darwin():
     return jsonify({"generated_text": serve("darwin")})
 
 
 @app.route("/dostoevsky", methods=["POST"])
-def dostoevsky() -> str:
+def dostoevsky():
     return jsonify({"generated_text": serve("dostoevsky")})
 
 
 @app.route("/fitzgerald", methods=["POST"])
-def fitzgerald() -> str:
+def fitzgerald():
     return jsonify({"generated_text": serve("fitzgerald")})
 
 
 @app.route("/twain", methods=["POST"])
-def twain() -> str:
+def twain():
     return jsonify({"generated_text": serve("twain")})
 
 
