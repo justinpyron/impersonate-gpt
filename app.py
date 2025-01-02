@@ -9,6 +9,17 @@ WRITERS = [
     "Fitzgerald",
     "Twain",
 ]
+WHAT_IS_THIS_APP = """
+This app demos [GPT2 models](https://huggingface.co/openai-community/gpt2) fine-tuned to mimic four famous writers with distinctive voices:
+1. Charles Darwin
+2. Fyodor Dostoevsky
+3. F. Scott Fitzgerald
+4. Mark Twain
+
+For each author, I obtained a dataset of four books from [Project Gutenberg](https://www.gutenberg.org). Each model was fine-tuned on these books for 10 epochs on an Nvidia L4 GPU on a Google Compute Engine VM.
+
+Source code 👉 [GitHub](https://github.com/justinpyron/impersonate-gpt)
+"""
 
 
 def ping_api(
@@ -33,15 +44,19 @@ st.set_page_config(page_title="ImpersonateGPT", layout="centered", page_icon="�
 
 st.title("ImpersonateGPT 🥸")
 with st.expander("What is this app?"):
-    st.markdown("TODO")
+    st.markdown(WHAT_IS_THIS_APP)
 
 with st.form("inputs", enter_to_submit=False, border=False):
-    text_seed = st.text_area("Enter seed text", "")
+    text_seed = st.text_area(
+        "Enter seed text",
+        "",
+        help="The app will generate text starting from what you enter here",
+    )
     selected_writers = st.segmented_control(
-        "Writers",
+        "Writers to mimic",
         options=WRITERS,
         selection_mode="multi",
-        help="The writers whose voice to mimic in the generated output",
+        help="The writers whose voice to emulate in the generated output",
     )
     selected_writers = [w for w in WRITERS if w in selected_writers]  # Preserve order
     submitted = st.form_submit_button("Generate text", use_container_width=True)
