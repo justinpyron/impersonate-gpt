@@ -35,6 +35,7 @@ volume = modal.Volume.from_name(VOLUME_NAME)
 @app.cls(
     image=image,
     volumes={VOLUME_MOUNT_PATH: volume},
+    gpu="T4",
     scaledown_window=SCALEDOWN_WINDOW_SECONDS,
 )
 class Server:
@@ -43,11 +44,17 @@ class Server:
     @modal.enter()
     def load_model_and_tokenizer(self):
         """Load model and tokenizer on container startup."""
+        import torch
         from transformers import AutoModelForCausalLM, AutoTokenizer
 
         model_path = f"{VOLUME_MOUNT_PATH}/{MODEL_FOLDER_PATH}"
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+
+        # Load tokenizer
         self.tokenizer = AutoTokenizer.from_pretrained(model_path)
-        self.model = AutoModelForCausalLM.from_pretrained(model_path)
+
+        # Load model directly to GPU
+        self.model = AutoModelForCausalLM.from_pretrained(model_path, device_map="auto")
         self.model.eval()
 
     def generate(
@@ -67,17 +74,17 @@ class Server:
         Returns:
             The full generated text (seed + continuation)
         """
-        # Tokenize input
-        input_tokens = self.tokenizer(text, return_tensors="pt")
+        # Tokenize input and move to GPU
+        input_tokens = self.tokenizer(text, return_tensors="pt").to(self.device)
 
-        # Generate continuation
+        # Generate continuation (output stays on GPU)
         output_tokens = self.model.generate(
             **input_tokens,
             max_new_tokens=num_tokens,
             temperature=temperature,
         )
 
-        # Decode and return full text
+        # Decode and return full text (decoder handles device transfer internally)
         generated_text = self.tokenizer.decode(
             output_tokens[0], skip_special_tokens=True
         )
