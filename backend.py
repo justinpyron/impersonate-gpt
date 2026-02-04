@@ -6,8 +6,9 @@ import modal
 # Global Configuration Parameters
 # =============================================================================
 
-MODAL_VOLUME_NAME = "impersonate-gpt"
-MODEL_FOLDER_PATH = "/data/model"
+VOLUME_NAME = "impersonate-gpt"
+VOLUME_MOUNT_PATH = "/data"
+MODEL_FOLDER_PATH = "model"
 SCALEDOWN_WINDOW_SECONDS = 600
 
 # =============================================================================
@@ -21,7 +22,7 @@ image = modal.Image.debian_slim(python_version="3.12").pip_install(
     "transformers==4.47.1",
 )
 
-volume = modal.Volume.from_name(MODAL_VOLUME_NAME)
+volume = modal.Volume.from_name(VOLUME_NAME)
 
 
 # =============================================================================
@@ -31,20 +32,20 @@ volume = modal.Volume.from_name(MODAL_VOLUME_NAME)
 
 @app.cls(
     image=image,
-    volumes={"/data": volume},
+    volumes={VOLUME_MOUNT_PATH: volume},
     scaledown_window=SCALEDOWN_WINDOW_SECONDS,
 )
 class Server:
     """Modal class for serving model inference."""
 
     @modal.enter()
-    def load_model(self):
+    def load_model_and_tokenizer(self):
         """Load model and tokenizer on container startup."""
         from transformers import AutoModelForCausalLM, AutoTokenizer
 
-        # Load tokenizer and model from volume
-        self.tokenizer = AutoTokenizer.from_pretrained(MODEL_FOLDER_PATH)
-        self.model = AutoModelForCausalLM.from_pretrained(MODEL_FOLDER_PATH)
+        model_path = f"{VOLUME_MOUNT_PATH}/{MODEL_FOLDER_PATH}"
+        self.tokenizer = AutoTokenizer.from_pretrained(model_path)
+        self.model = AutoModelForCausalLM.from_pretrained(model_path)
         self.model.eval()
 
     def generate(
@@ -71,9 +72,7 @@ class Server:
         output_tokens = self.model.generate(
             **input_tokens,
             max_new_tokens=num_tokens,
-            do_sample=True,
             temperature=temperature,
-            pad_token_id=self.tokenizer.eos_token_id,
         )
 
         # Decode and return full text
