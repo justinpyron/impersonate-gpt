@@ -20,6 +20,7 @@ app = modal.App("impersonate-gpt")
 image = modal.Image.debian_slim(python_version="3.12").pip_install(
     "torch==2.10.0",
     "transformers==4.55.4",
+    "accelerate==1.12.0",
     "fastapi==0.128.0",
     "pydantic==2.12.5",
 )
