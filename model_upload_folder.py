@@ -2,7 +2,7 @@
 Upload a local folder to a Modal volume.
 
 Usage:
-    python modal_upload.py /path/to/local/folder my-volume-name
+    python model_upload_folder.py /path/to/local/folder my-volume-name /remote/path
 """
 
 import argparse
@@ -32,16 +32,15 @@ def parse_args():
     )
 
     parser.add_argument(
-        "--remote-path",
+        "remote_path",
         type=str,
-        default="/",
-        help="Remote path in the volume where files will be uploaded (default: /)",
+        help="Remote path in the volume where files will be uploaded",
     )
 
     return parser.parse_args()
 
 
-def upload_folder(local_path: str, volume_name: str, remote_path: str = "/"):
+def upload_folder(local_path: str, volume_name: str, remote_path: str):
     """
     Upload a local folder to a Modal volume.
 
