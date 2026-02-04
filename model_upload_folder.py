@@ -66,7 +66,7 @@ def upload_folder(local_path: str, volume_name: str, remote_path: str):
 
     # Get or create the volume
     try:
-        volume = modal.Volume.from_name(volume_name, create_if_missing=True)
+        volume = modal.Volume.from_name(volume_name)
     except Exception as e:
         print(f"Error accessing volume '{volume_name}': {e}", file=sys.stderr)
         sys.exit(1)
