@@ -8,8 +8,8 @@ import modal
 
 VOLUME_NAME = "impersonate-gpt"
 VOLUME_MOUNT_PATH = "/data"
-MODEL_FOLDER_PATH = "model"
-SCALEDOWN_WINDOW_SECONDS = 600
+MODEL_FOLDER_PATH = "gemma-3-270m"
+SCALEDOWN_WINDOW_SECONDS = 60 * 5
 
 # =============================================================================
 # Modal Setup
@@ -18,8 +18,10 @@ SCALEDOWN_WINDOW_SECONDS = 600
 app = modal.App("impersonate-gpt")
 
 image = modal.Image.debian_slim(python_version="3.12").pip_install(
-    "torch==2.5.1",
-    "transformers==4.47.1",
+    "torch==2.10.0",
+    "transformers==4.55.4",
+    "fastapi==0.128.0",
+    "pydantic==2.12.5",
 )
 
 volume = modal.Volume.from_name(VOLUME_NAME)
@@ -85,32 +87,35 @@ class Server:
     def fastapi_server(self):
         """Create and configure the FastAPI application."""
         from fastapi import FastAPI
+        from pydantic import BaseModel
+
+        class GenerateRequest(BaseModel):
+            text: str
+            temperature: float
+            num_tokens: int
+
+        class GenerateResponse(BaseModel):
+            generated_text: str
 
         server = FastAPI(title="ImpersonateGPT API")
 
-        @server.post("/generate")
-        def generate_endpoint(
-            text: str,
-            temperature: float,
-            num_tokens: int,
-        ):
+        @server.post("/generate", response_model=GenerateResponse)
+        def generate_endpoint(request: GenerateRequest) -> GenerateResponse:
             """
             Generate text continuation from seed text.
 
             Args:
-                text: The seed text to continue
-                temperature: Temperature for sampling (higher = more random)
-                num_tokens: Number of new tokens to generate
+                request: Request containing seed text and generation parameters
 
             Returns:
-                JSON response with the full generated text
+                Response with the full generated text
             """
             generated_text = self.generate(
-                text=text,
-                temperature=temperature,
-                num_tokens=num_tokens,
+                text=request.text,
+                temperature=request.temperature,
+                num_tokens=request.num_tokens,
             )
-            return {"generated_text": generated_text}
+            return GenerateResponse(generated_text=generated_text)
 
         @server.get("/health")
         async def health_check():
