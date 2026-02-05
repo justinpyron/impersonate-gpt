@@ -6,6 +6,7 @@ from pydantic import BaseModel
 class SFTExample(BaseModel):
     """A single example for SFT training."""
 
+    id: str  # Unique identifier
     path: Path  # Path to the original book
     prompt: str  # Seed/context text
     completion: str  # Continuation text

@@ -10,6 +10,7 @@ Transforms raw book text files into SFTExample objects by:
 import argparse
 import json
 import re
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -156,7 +157,11 @@ def map_book_to_sft_examples(
 
         prompt, completion = split_chunk(chunk, prompt_ratio)
         example = SFTExample(
-            path=path, prompt=prompt, completion=completion, created_at=created_at
+            id=str(uuid.uuid4()),
+            path=path,
+            prompt=prompt,
+            completion=completion,
+            created_at=created_at,
         )
         examples.append(example)
 
