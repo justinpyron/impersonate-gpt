@@ -2,9 +2,9 @@
 set -e
 
 # Configuration
-CHUNK_WORDS=500
-OVERLAP_WORDS=100
-PROMPT_RATIO=0.3
+CHUNK_WORDS=400
+OVERLAP_WORDS=40
+PROMPT_RATIO=0.1
 
 # Create SFT datasets for all authors
 
