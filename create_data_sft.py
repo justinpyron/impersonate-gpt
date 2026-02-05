@@ -248,6 +248,7 @@ def main():
     args = parser.parse_args()
 
     # 1. Check if output file already exists
+    print("=" * 80)
     if args.output.exists():
         raise FileExistsError(f"Output file already exists: {args.output}")
 
