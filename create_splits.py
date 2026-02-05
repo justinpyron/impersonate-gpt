@@ -11,17 +11,21 @@ import random
 from collections import defaultdict
 from pathlib import Path
 
+from pydantic import BaseModel
+
+from schemas import DPOExample, SFTExample
+
 
 def split_examples(
-    examples: list[dict],
+    examples: list[SFTExample | DPOExample],
     train_ratio: float,
     seed: int,
-) -> tuple[list[dict], list[dict]]:
+) -> tuple[list[SFTExample | DPOExample], list[SFTExample | DPOExample]]:
     """
     Split examples into train and val sets, stratified by book.
 
     Args:
-        examples: List of example dicts (must have 'path' field)
+        examples: List of examples (SFTExample or DPOExample)
         train_ratio: Fraction of examples for training (0.0 to 1.0)
         seed: Random seed for reproducibility
 
@@ -29,9 +33,9 @@ def split_examples(
         Tuple of (train_examples, val_examples)
     """
     # Group examples by book path
-    by_book: dict[str, list[dict]] = defaultdict(list)
+    by_book: dict[str, list[SFTExample | DPOExample]] = defaultdict(list)
     for ex in examples:
-        by_book[ex["path"]].append(ex)
+        by_book[str(ex.path)].append(ex)
 
     # Create seeded random instance
     rng = random.Random(seed)
@@ -95,7 +99,14 @@ def main():
     # Load input JSON
     print(f"Loading: {args.input}")
     with open(args.input, "r", encoding="utf-8") as f:
-        examples = json.load(f)
+        raw_data = json.load(f)
+
+    # Parse into Pydantic models
+    # Try to infer which model type based on fields
+    if raw_data and "rejected" in raw_data[0]:
+        examples = [DPOExample(**ex) for ex in raw_data]
+    else:
+        examples = [SFTExample(**ex) for ex in raw_data]
 
     print(f"Total examples: {len(examples)}")
     print(f"Train ratio: {args.train_ratio}")
@@ -105,7 +116,7 @@ def main():
     # Count examples per book
     by_book: dict[str, int] = defaultdict(int)
     for ex in examples:
-        by_book[ex["path"]] += 1
+        by_book[str(ex.path)] += 1
 
     print(f"Books: {len(by_book)}")
     for path, count in sorted(by_book.items()):
@@ -126,11 +137,11 @@ def main():
     val_path = args.output_dir / f"{args.name}_val.json"
 
     with open(train_path, "w", encoding="utf-8") as f:
-        json.dump(train_examples, f, indent=4)
+        json.dump([ex.model_dump(mode="json") for ex in train_examples], f, indent=4)
     print(f"Saved: {train_path}")
 
     with open(val_path, "w", encoding="utf-8") as f:
-        json.dump(val_examples, f, indent=4)
+        json.dump([ex.model_dump(mode="json") for ex in val_examples], f, indent=4)
     print(f"Saved: {val_path}")
 
 
