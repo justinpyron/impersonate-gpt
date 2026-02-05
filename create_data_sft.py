@@ -157,7 +157,7 @@ def map_book_to_sft_examples(
 
         prompt, completion = split_chunk(chunk, prompt_ratio)
         example = SFTExample(
-            id=str(uuid.uuid4()),
+            id=str(uuid.uuid4())[:4],
             path=path,
             prompt=prompt,
             completion=completion,
