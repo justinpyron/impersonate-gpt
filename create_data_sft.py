@@ -14,6 +14,7 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
+from banned_words import banned_words
 from schemas import SFTExample
 
 
@@ -156,6 +157,12 @@ def map_book_to_sft_examples(
             continue
 
         prompt, completion = split_chunk(chunk, prompt_ratio)
+
+        # Skip if completion contains banned words (case-insensitive)
+        completion_lower = completion.lower()
+        if any(banned_word in completion_lower for banned_word in banned_words):
+            continue
+
         example = SFTExample(
             id=str(uuid.uuid4())[:4],
             path=path,
