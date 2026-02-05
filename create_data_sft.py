@@ -240,6 +240,10 @@ def main():
 
     args = parser.parse_args()
 
+    # Check if output file already exists
+    if args.output.exists():
+        raise FileExistsError(f"Output file already exists: {args.output}")
+
     # Find all .txt files in input directory
     paths = sorted(args.input_dir.glob("*.txt"))
     if not paths:
