@@ -3,6 +3,9 @@ Script to split examples into train/val sets, stratified by book.
 
 Takes a JSON file of examples (SFTExample or DPOExample) and splits them
 into train and val sets, ensuring each book contributes to both sets.
+
+Output files are created in the same directory as the input file with
+_train.json and _val.json suffixes.
 """
 
 import argparse
@@ -70,18 +73,6 @@ def main():
         help="Path to input JSON file",
     )
     parser.add_argument(
-        "--output-dir",
-        type=Path,
-        required=True,
-        help="Directory for output files",
-    )
-    parser.add_argument(
-        "--name",
-        type=str,
-        required=True,
-        help="Prefix for output files (produces {name}_train.json and {name}_val.json)",
-    )
-    parser.add_argument(
         "--train-ratio",
         type=float,
         default=0.8,
@@ -104,23 +95,13 @@ def main():
     # Parse into Pydantic models
     # Try to infer which model type based on fields
     if raw_data and "rejected" in raw_data[0]:
-        examples = [DPOExample(**ex) for ex in raw_data]
+        examples = [DPOExample.model_validate(ex) for ex in raw_data]
     else:
-        examples = [SFTExample(**ex) for ex in raw_data]
+        examples = [SFTExample.model_validate(ex) for ex in raw_data]
 
     print(f"Total examples: {len(examples)}")
     print(f"Train ratio: {args.train_ratio}")
     print(f"Seed: {args.seed}")
-    print()
-
-    # Count examples per book
-    by_book: dict[str, int] = defaultdict(int)
-    for ex in examples:
-        by_book[str(ex.path)] += 1
-
-    print(f"Books: {len(by_book)}")
-    for path, count in sorted(by_book.items()):
-        print(f"  {Path(path).name}: {count} examples")
     print()
 
     # Split examples
@@ -129,13 +110,13 @@ def main():
     print(f"Train examples: {len(train_examples)}")
     print(f"Val examples: {len(val_examples)}")
 
-    # Ensure output directory exists
-    args.output_dir.mkdir(parents=True, exist_ok=True)
+    # Create output paths in same directory as input
+    input_dir = args.input.parent
+    input_stem = args.input.stem  # filename without extension
+    train_path = input_dir / f"{input_stem}_train.json"
+    val_path = input_dir / f"{input_stem}_val.json"
 
     # Write output files
-    train_path = args.output_dir / f"{args.name}_train.json"
-    val_path = args.output_dir / f"{args.name}_val.json"
-
     with open(train_path, "w", encoding="utf-8") as f:
         json.dump([ex.model_dump(mode="json") for ex in train_examples], f, indent=4)
     print(f"Saved: {train_path}")
