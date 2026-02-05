@@ -116,7 +116,7 @@ def split_chunk(chunk: str, prompt_ratio: float) -> tuple[str, str]:
     split_index = max(1, min(split_index, len(words) - 1))
 
     prompt = " ".join(words[:split_index])
-    completion = " ".join(words[split_index:])
+    completion = " " + " ".join(words[split_index:])
 
     return prompt, completion
 
