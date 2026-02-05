@@ -93,22 +93,22 @@ def chunk_text(text: str, chunk_words: int, overlap_words: int = 0) -> list[str]
     return chunks
 
 
-def split_chunk(chunk: str, split_ratio: float) -> tuple[str, str]:
+def split_chunk(chunk: str, prompt_ratio: float) -> tuple[str, str]:
     """
-    Split a chunk into prompt and completion at approximately split_ratio.
+    Split a chunk into prompt and completion at approximately prompt_ratio.
 
     Args:
         chunk: Text chunk to split
-        split_ratio: Fraction of chunk that becomes prompt (0.0 to 1.0)
+        prompt_ratio: Fraction of chunk that becomes prompt (0.0 to 1.0)
 
     Returns:
         Tuple of (prompt, completion)
     """
-    if not 0.0 < split_ratio < 1.0:
-        raise ValueError("split_ratio must be between 0 and 1 (exclusive)")
+    if not 0.0 < prompt_ratio < 1.0:
+        raise ValueError("prompt_ratio must be between 0 and 1 (exclusive)")
 
     words = chunk.split()
-    split_index = int(len(words) * split_ratio)
+    split_index = int(len(words) * prompt_ratio)
 
     # Ensure we have at least one word on each side
     split_index = max(1, min(split_index, len(words) - 1))
@@ -123,7 +123,7 @@ def book_to_sft_examples(
     path: Path,
     chunk_words: int,
     overlap_words: int,
-    split_ratio: float,
+    prompt_ratio: float,
     min_chunk_words: int = 20,
 ) -> list[SFTExample]:
     """
@@ -133,7 +133,7 @@ def book_to_sft_examples(
         path: Path to the book file
         chunk_words: Target words per chunk
         overlap_words: Words of overlap between chunks
-        split_ratio: Fraction of chunk that becomes prompt
+        prompt_ratio: Fraction of chunk that becomes prompt
         min_chunk_words: Minimum words required for a valid chunk
 
     Returns:
@@ -151,7 +151,7 @@ def book_to_sft_examples(
         if len(chunk.split()) < min_chunk_words:
             continue
 
-        prompt, completion = split_chunk(chunk, split_ratio)
+        prompt, completion = split_chunk(chunk, prompt_ratio)
         example = SFTExample(path=path, prompt=prompt, completion=completion)
         examples.append(example)
 
@@ -162,7 +162,7 @@ def create_sft_dataset(
     paths: list[Path],
     chunk_words: int,
     overlap_words: int,
-    split_ratio: float,
+    prompt_ratio: float,
 ) -> list[SFTExample]:
     """
     Process multiple book files into a combined list of SFTExample objects.
@@ -171,7 +171,7 @@ def create_sft_dataset(
         paths: List of paths to book files
         chunk_words: Target words per chunk
         overlap_words: Words of overlap between chunks
-        split_ratio: Fraction of chunk that becomes prompt
+        prompt_ratio: Fraction of chunk that becomes prompt
 
     Returns:
         Combined list of SFTExample objects from all books
@@ -182,7 +182,7 @@ def create_sft_dataset(
         print(f"Processing: {path.name}")
         try:
             examples = book_to_sft_examples(
-                path, chunk_words, overlap_words, split_ratio
+                path, chunk_words, overlap_words, prompt_ratio
             )
             all_examples.extend(examples)
             print(f"  -> {len(examples)} examples")
@@ -237,7 +237,7 @@ def main():
 
     print(f"Found {len(paths)} book files")
     print(
-        f"Parameters: chunk_words={args.chunk_words}, overlap_words={args.overlap_words}, split_ratio={args.split_ratio}"
+        f"Parameters: chunk_words={args.chunk_words}, overlap_words={args.overlap_words}, prompt_ratio={args.prompt_ratio}"
     )
     print()
 
@@ -246,7 +246,7 @@ def main():
         paths=paths,
         chunk_words=args.chunk_words,
         overlap_words=args.overlap_words,
-        split_ratio=args.split_ratio,
+        prompt_ratio=args.prompt_ratio,
     )
 
     print()
@@ -257,7 +257,7 @@ def main():
 
     # Write to JSON
     with open(args.output, "w", encoding="utf-8") as f:
-        json.dump([ex.model_dump(mode="json") for ex in examples], f, indent=2)
+        json.dump([ex.model_dump(mode="json") for ex in examples], f, indent=4)
 
     print(f"Saved to: {args.output}")
 
