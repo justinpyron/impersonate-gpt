@@ -83,7 +83,7 @@ def main():
 
     args = parser.parse_args()
 
-    # Load input JSON
+    # 1. Load input JSON
     print(f"Loading: {args.input}")
     with open(args.input, "r", encoding="utf-8") as f:
         examples = json.load(f)
@@ -93,36 +93,25 @@ def main():
     print(f"Seed: {args.seed}")
     print()
 
-    # Count examples per book
-    by_book: dict[str, int] = defaultdict(int)
-    for ex in examples:
-        by_book[ex["path"]] += 1
-
-    print(f"Books: {len(by_book)}")
-    for path, count in sorted(by_book.items()):
-        print(f"  {Path(path).name}: {count} examples")
-    print()
-
-    # Split examples
+    # 2. Split examples
     train_examples, val_examples = split_examples(examples, args.train_ratio, args.seed)
-
     print(f"Train examples: {len(train_examples)}")
     print(f"Val examples: {len(val_examples)}")
 
-    # Create output paths in same directory as input
+    # 3. Create output paths in same directory as input
     input_dir = args.input.parent
     input_stem = args.input.stem  # filename without extension
     train_path = input_dir / f"{input_stem}_train.json"
     val_path = input_dir / f"{input_stem}_val.json"
 
-    # Write output files
-    with open(train_path, "w", encoding="utf-8") as f:
-        json.dump(train_examples, f, indent=4)
-    print(f"Saved: {train_path}")
-
-    with open(val_path, "w", encoding="utf-8") as f:
-        json.dump(val_examples, f, indent=4)
-    print(f"Saved: {val_path}")
+    # 4. Write output files
+    for examples, save_path in [
+        (train_examples, train_path),
+        (val_examples, val_path),
+    ]:
+        with open(save_path, "w", encoding="utf-8") as f:
+            json.dump(examples, f, indent=4)
+        print(f"Saved: {save_path}")
 
 
 if __name__ == "__main__":
