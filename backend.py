@@ -10,6 +10,7 @@ VOLUME_NAME = "impersonate-gpt"
 VOLUME_MOUNT_PATH = "/data"
 MODEL_FOLDER_PATH = "gemma-3-270m"
 SCALEDOWN_WINDOW_SECONDS = 60
+GPU = None
 
 # =============================================================================
 # Modal Setup
@@ -36,7 +37,7 @@ volume = modal.Volume.from_name(VOLUME_NAME)
 @app.cls(
     image=image,
     volumes={VOLUME_MOUNT_PATH: volume},
-    gpu="T4",
+    gpu=GPU,
     scaledown_window=SCALEDOWN_WINDOW_SECONDS,
 )
 class Server:
