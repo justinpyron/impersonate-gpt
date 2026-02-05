@@ -10,6 +10,7 @@ Transforms raw book text files into SFTExample objects by:
 import argparse
 import json
 import re
+from datetime import datetime, timezone
 from pathlib import Path
 
 from schemas import SFTExample
@@ -119,11 +120,12 @@ def split_chunk(chunk: str, prompt_ratio: float) -> tuple[str, str]:
     return prompt, completion
 
 
-def book_to_sft_examples(
+def map_book_to_sft_examples(
     path: Path,
     chunk_words: int,
     overlap_words: int,
     prompt_ratio: float,
+    created_at: str,
     min_chunk_words: int = 20,
 ) -> list[SFTExample]:
     """
@@ -134,6 +136,7 @@ def book_to_sft_examples(
         chunk_words: Target words per chunk
         overlap_words: Words of overlap between chunks
         prompt_ratio: Fraction of chunk that becomes prompt
+        created_at: UTC timestamp in ISO format
         min_chunk_words: Minimum words required for a valid chunk
 
     Returns:
@@ -152,7 +155,9 @@ def book_to_sft_examples(
             continue
 
         prompt, completion = split_chunk(chunk, prompt_ratio)
-        example = SFTExample(path=path, prompt=prompt, completion=completion)
+        example = SFTExample(
+            path=path, prompt=prompt, completion=completion, created_at=created_at
+        )
         examples.append(example)
 
     return examples
@@ -177,12 +182,13 @@ def create_sft_dataset(
         Combined list of SFTExample objects from all books
     """
     all_examples = []
+    created_at = datetime.now(timezone.utc).isoformat()
 
     for path in paths:
         print(f"Processing: {path.name}")
         try:
-            examples = book_to_sft_examples(
-                path, chunk_words, overlap_words, prompt_ratio
+            examples = map_book_to_sft_examples(
+                path, chunk_words, overlap_words, prompt_ratio, created_at
             )
             all_examples.extend(examples)
             print(f"  -> {len(examples)} examples")

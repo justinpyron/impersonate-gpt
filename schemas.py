@@ -9,6 +9,7 @@ class SFTExample(BaseModel):
     path: Path  # Path to the original book
     prompt: str  # Seed/context text
     completion: str  # Continuation text
+    created_at: str  # UTC timestamp in ISO format
 
 
 class DPOExample(BaseModel):
