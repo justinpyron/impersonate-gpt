@@ -71,8 +71,8 @@ def main():
     parser.add_argument(
         "--train-ratio",
         type=float,
-        default=0.8,
-        help="Fraction of examples for training (default: 0.8)",
+        default=0.9,
+        help="Fraction of examples for training (default: 0.9)",
     )
     parser.add_argument(
         "--seed",
