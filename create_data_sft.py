@@ -240,16 +240,17 @@ def main():
 
     args = parser.parse_args()
 
-    # Check if output file already exists
+    # 1. Check if output file already exists
     if args.output.exists():
         raise FileExistsError(f"Output file already exists: {args.output}")
 
-    # Find all .txt files in input directory
+    # 2. Find all .txt files in input directory
     paths = sorted(args.input_dir.glob("*.txt"))
     if not paths:
         print(f"No .txt files found in {args.input_dir}")
         return
 
+    # 3. Print parameters
     print(f"Found {len(paths)} book files")
     print(
         "Parameters:",
@@ -259,7 +260,7 @@ def main():
     )
     print()
 
-    # Create dataset
+    # 4. Create dataset
     examples = create_sft_dataset(
         paths=paths,
         chunk_words=args.chunk_words,
@@ -270,10 +271,10 @@ def main():
     print()
     print(f"Total examples: {len(examples)}")
 
-    # Ensure output directory exists
+    # 5. Ensure output directory exists
     args.output.parent.mkdir(parents=True, exist_ok=True)
 
-    # Write to JSON
+    # 6. Write to JSON
     with open(args.output, "w", encoding="utf-8") as f:
         json.dump([ex.model_dump(mode="json") for ex in examples], f, indent=4)
 
