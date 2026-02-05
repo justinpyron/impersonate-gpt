@@ -221,7 +221,7 @@ def main():
         help="Words of overlap between chunks (default: 0)",
     )
     parser.add_argument(
-        "--split-ratio",
+        "--prompt-ratio",
         type=float,
         default=0.5,
         help="Fraction of chunk that becomes prompt (default: 0.5)",
@@ -237,7 +237,10 @@ def main():
 
     print(f"Found {len(paths)} book files")
     print(
-        f"Parameters: chunk_words={args.chunk_words}, overlap_words={args.overlap_words}, prompt_ratio={args.prompt_ratio}"
+        "Parameters:",
+        f"\n  chunk_words   = {args.chunk_words}",
+        f"\n  overlap_words = {args.overlap_words}",
+        f"\n  prompt_ratio  = {args.prompt_ratio}",
     )
     print()
 
