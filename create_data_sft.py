@@ -182,7 +182,7 @@ def create_sft_dataset(
         Combined list of SFTExample objects from all books
     """
     all_examples = []
-    created_at = datetime.now(timezone.utc).isoformat()
+    created_at = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
 
     for path in paths:
         print(f"Processing: {path.name}")
