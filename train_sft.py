@@ -14,8 +14,10 @@ Usage:
         [--learning-rate 0.0002] \
         [--num-epochs 2] \
         [--batch-size 4] \
+        [--gradient-accumulation-steps 4] \
         [--max-length 2048] \
-        [--gradient-accumulation-steps 4]
+        [--logging-steps 0.1] \
+        [--eval-steps 0.25]
 """
 
 import json
@@ -88,8 +90,10 @@ def train(
     learning_rate: float,
     num_epochs: int,
     batch_size: int,
-    max_length: int,
     gradient_accumulation_steps: int,
+    max_length: int,
+    logging_steps: float,
+    eval_steps: float,
 ):
     """Run SFT training with LoRA on a frozen base model."""
     import os
@@ -131,13 +135,13 @@ def train(
         num_train_epochs=num_epochs,
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size,
-        max_length=max_length,
         gradient_accumulation_steps=gradient_accumulation_steps,
+        max_length=max_length,
         completion_only_loss=True,
-        eval_strategy="steps",
-        eval_steps=0.25,
         logging_strategy="steps",
-        logging_steps=0.1,
+        logging_steps=logging_steps,
+        eval_strategy="steps",
+        eval_steps=eval_steps,
         save_strategy="best",
         load_best_model_at_end=True,
         report_to="wandb",
@@ -171,10 +175,12 @@ def main(
     lora_r: int = 16,
     lora_alpha: int = 32,
     learning_rate: float = 2e-4,
-    num_epochs: int = 2,
+    num_epochs: int = 1,
     batch_size: int = 4,
-    max_length: int = 2048,
     gradient_accumulation_steps: int = 4,
+    max_length: int = 2048,
+    logging_steps: float = 0.1,
+    eval_steps: float = 0.5,
 ):
     """Launch SFT training on Modal. All paths are relative to the volume root."""
     print("=" * 80)
@@ -199,6 +205,8 @@ def main(
         learning_rate=learning_rate,
         num_epochs=num_epochs,
         batch_size=batch_size,
-        max_length=max_length,
         gradient_accumulation_steps=gradient_accumulation_steps,
+        max_length=max_length,
+        logging_steps=logging_steps,
+        eval_steps=eval_steps,
     )
