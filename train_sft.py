@@ -136,6 +136,7 @@ def train(
         eval_strategy="epoch",
         save_strategy="epoch",
         load_best_model_at_end=True,
+        completion_only_loss=True,
         report_to="wandb",
     )
 
