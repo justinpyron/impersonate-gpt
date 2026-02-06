@@ -153,6 +153,7 @@ def train(
         eval_steps=eval_steps,
         save_strategy="best",
         load_best_model_at_end=True,
+        save_total_limit=3,
         report_to="wandb",
     )
 
