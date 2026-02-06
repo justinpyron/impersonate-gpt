@@ -46,34 +46,20 @@ class Server:
     @modal.enter()
     def load_model_and_tokenizer(self):
         """Load model and tokenizer on container startup."""
-        import time
-
         import torch
         from transformers import AutoModelForCausalLM, AutoTokenizer
-
-        start_total = time.time()
 
         model_path = f"{VOLUME_MOUNT_PATH}/{MODEL_FOLDER_PATH}"
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        print(f"[TIMING] (Loading) Device: {self.device}")
-
         # Load tokenizer
-        start = time.time()
         self.tokenizer = AutoTokenizer.from_pretrained(model_path)
-        print(f"[TIMING] (Loading) Tokenizer loaded in {time.time() - start:.2f}s")
 
         # Load model directly to GPU
-        start = time.time()
         self.model = AutoModelForCausalLM.from_pretrained(model_path, device_map="auto")
-        print(f"[TIMING] (Loading) Model loaded in {time.time() - start:.2f}s")
 
         # Set to eval mode
         self.model.eval()
-
-        print(
-            f"[TIMING] (Loading) Total model loading: {time.time() - start_total:.2f}s"
-        )
 
     def generate(
         self,
@@ -92,33 +78,19 @@ class Server:
         Returns:
             The full generated text (seed + continuation)
         """
-        import time
-
-        start_total = time.time()
-
         # Tokenize input and move to GPU
-        start = time.time()
         input_tokens = self.tokenizer(text, return_tensors="pt").to(self.device)
-        print(f"[TIMING] (Inference) Tokenization: {time.time() - start:.2f}s")
 
         # Generate continuation (output stays on GPU)
-        start = time.time()
         output_tokens = self.model.generate(
             **input_tokens,
             max_new_tokens=num_tokens,
             temperature=temperature,
         )
-        print(f"[TIMING] (Inference) Generation: {time.time() - start:.2f}s")
 
         # Decode and return full text (decoder handles device transfer internally)
-        start = time.time()
         generated_text = self.tokenizer.decode(
             output_tokens[0], skip_special_tokens=True
-        )
-        print(f"[TIMING] (Inference) Decoding: {time.time() - start:.2f}s")
-
-        print(
-            f"[TIMING] (Inference) Total generate call: {time.time() - start_total:.2f}s"
         )
 
         return generated_text
