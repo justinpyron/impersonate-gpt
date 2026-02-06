@@ -189,7 +189,7 @@ def main(
     gradient_accumulation_steps: int = 4,
     max_length: int = 2048,
     logging_steps: float = 0.1,
-    eval_steps: float = 0.5,
+    eval_steps: float = 0.1,
 ):
     """Launch SFT training on Modal. All paths are relative to the volume root."""
     print("=" * 80)
