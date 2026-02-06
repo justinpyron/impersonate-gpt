@@ -134,3 +134,38 @@ def train(
     trainer.train()
     trainer.save_model(output_dir_full)
     volume.commit()
+
+
+# =============================================================================
+# CLI Entrypoint
+# =============================================================================
+
+
+@app.local_entrypoint()
+def main(
+    model_path: str,
+    data_path_train: str,
+    data_path_val: str,
+    output_dir: str,
+    lora_r: int = 16,
+    lora_alpha: int = 32,
+    learning_rate: float = 2e-4,
+    num_epochs: int = 3,
+    batch_size: int = 4,
+    max_seq_length: int = 2048,
+    gradient_accumulation_steps: int = 4,
+):
+    """Launch SFT training on Modal. All paths are relative to the volume root."""
+    train.remote(
+        model_path=model_path,
+        data_path_train=data_path_train,
+        data_path_val=data_path_val,
+        output_dir=output_dir,
+        lora_r=lora_r,
+        lora_alpha=lora_alpha,
+        learning_rate=learning_rate,
+        num_epochs=num_epochs,
+        batch_size=batch_size,
+        max_seq_length=max_seq_length,
+        gradient_accumulation_steps=gradient_accumulation_steps,
+    )
