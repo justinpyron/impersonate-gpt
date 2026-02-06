@@ -17,17 +17,18 @@ import modal
 # Configuration
 # =============================================================================
 
-VOLUME_NAME = "PLACEHOLDER"
+APP_NAME = "impersonate-gpt-sft"
+VOLUME_NAME = "impersonate-gpt"
 VOLUME_MOUNT_PATH = "/data"
-GPU = "PLACEHOLDER"  # e.g. modal.gpu.A100(count=1)
-WANDB_ENTITY = "PLACEHOLDER"  # Your wandb username or team
-WANDB_PROJECT = "PLACEHOLDER"  # Your wandb project name
+GPU = "A10"
+WANDB_ENTITY = "pyron"
+WANDB_PROJECT = "impersonate-gpt-sft"
 
 # =============================================================================
 # Modal Setup
 # =============================================================================
 
-app = modal.App("PLACEHOLDER")
+app = modal.App(APP_NAME)
 
 image = modal.Image.debian_slim(python_version="3.12").pip_install(
     "torch",
