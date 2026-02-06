@@ -3,8 +3,8 @@ SFT training with LoRA on Modal.
 
 Trains LoRA adapters on a frozen base model. Logs are sent to Weights & Biases.
 
-Usage (fire-and-forget with --detach):
-    modal run --detach train_sft.py \
+Usage:
+    modal run train_sft.py \
         --model-path <path-in-volume> \
         --data-path-train <path-in-volume> \
         --data-path-val <path-in-volume> \
@@ -16,8 +16,6 @@ Usage (fire-and-forget with --detach):
         [--batch-size 4] \
         [--max-seq-length 2048] \
         [--gradient-accumulation-steps 4]
-
-The --detach flag allows you to close your terminal while training continues.
 """
 
 import json
