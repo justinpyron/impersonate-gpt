@@ -1,14 +1,23 @@
 FROM python:3.12-slim
+
 WORKDIR /app
-COPY pyproject.toml \
-    poetry.lock \
-    flask_app.py \
-    model_darwin_20250101T0035.pt \
-    model_dostoevsky_20250101T0202.pt \
-    model_fitzgerald_20241231T2306.pt \
-    model_twain_20241231T2357.pt \
-    /app/
-RUN pip install poetry
-RUN poetry install
+
+# Copy requirements and install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+# NOTE: requirements.txt is generated during the CI/CD workflow.
+# This keeps dependencies in sync without manual duplication.
+# See .github/workflows/build-and-deploy.yml.
+
+# Copy application files
+COPY app.py .
+
+# Expose port 8080 for Cloud Run
 EXPOSE 8080
-ENTRYPOINT ["poetry", "run", "python", "flask_app.py"]
+
+# Run Streamlit with Cloud Run-compatible settings
+CMD ["streamlit", "run", "app.py", \
+     "--server.port=8080", \
+     "--server.address=0.0.0.0", \
+     "--server.headless=true", \
+     "--browser.gatherUsageStats=false"]
