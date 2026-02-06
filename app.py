@@ -87,7 +87,9 @@ with st.form("inputs", enter_to_submit=False, border=False):
             w for w in WRITERS if w in selected_writers
         ]  # Preserve order
     with col2:
-        with st.expander("Settings"):
+        with st.expander(
+            "Settings"
+        ):  # TODO: Don't put these in an expander; put each in its own column
             temperature = st.slider(
                 "Temperature",
                 min_value=0.1,
@@ -106,7 +108,7 @@ with st.form("inputs", enter_to_submit=False, border=False):
             )
     submitted = st.form_submit_button(
         "Generate text", use_container_width=True, type="primary"
-    )
+    )  # TODO: Change to just "Generate"
 
 if submitted and len(selected_writers) > 0:
     columns = st.columns(len(selected_writers))
