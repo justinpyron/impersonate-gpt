@@ -79,9 +79,9 @@ class Server:
         temperature: float,
         num_tokens: int,
         adapter_name: str,
-    ) -> str:
+    ):
         """
-        Generate text continuation for a single input.
+        Generate text continuation, yielding token chunks as they are produced.
 
         Args:
             text: The seed text to continue
@@ -89,36 +89,44 @@ class Server:
             num_tokens: Number of new tokens to generate
             adapter_name: Name of the LoRA adapter to use, or "base" for base model
 
-        Returns:
-            The full generated text (seed + continuation)
+        Yields:
+            Token chunks as strings
         """
+        import threading
+
+        from transformers import TextIteratorStreamer
+
         # Tokenize input
         input_tokens = self.tokenizer(text, return_tensors="pt")
 
-        # Generate continuation
-        if adapter_name == "base":
-            # Use base model without any adapter
-            with self.model.disable_adapter():
-                output_tokens = self.model.generate(
-                    **input_tokens,
-                    max_new_tokens=num_tokens,
-                    temperature=temperature,
-                )
-        else:
-            # Use specified adapter
-            self.model.set_adapter(adapter_name)
-            output_tokens = self.model.generate(
-                **input_tokens,
-                max_new_tokens=num_tokens,
-                temperature=temperature,
-            )
-
-        # Decode and return full text
-        generated_text = self.tokenizer.decode(
-            output_tokens[0], skip_special_tokens=True
+        # Set up streamer
+        streamer = TextIteratorStreamer(
+            self.tokenizer, skip_prompt=True, skip_special_tokens=True
+        )
+        generation_kwargs = dict(
+            **input_tokens,
+            streamer=streamer,
+            max_new_tokens=num_tokens,
+            temperature=temperature,
         )
 
-        return generated_text
+        # Run generation in background thread (model.generate blocks)
+        def _run():
+            if adapter_name == "base":
+                with self.model.disable_adapter():
+                    self.model.generate(**generation_kwargs)
+            else:
+                self.model.set_adapter(adapter_name)
+                self.model.generate(**generation_kwargs)
+
+        thread = threading.Thread(target=_run)
+        thread.start()
+
+        # Yield token chunks as they arrive
+        for chunk in streamer:
+            yield chunk
+
+        thread.join()
 
     @modal.asgi_app()
     def fastapi_server(self):
