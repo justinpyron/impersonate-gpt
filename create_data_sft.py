@@ -14,8 +14,19 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
+from pydantic import BaseModel
+
 from banned_words import banned_words
-from schemas import SFTExample
+
+
+class SFTExample(BaseModel):
+    """A single example for SFT training."""
+
+    id: str  # Unique identifier
+    path: Path  # Path to the original book
+    prompt: str  # Seed/context text
+    completion: str  # Continuation text
+    created_at: str  # UTC timestamp in YYYYMMDDTHHMMSSZ format
 
 
 def strip_gutenberg(text: str) -> str:
