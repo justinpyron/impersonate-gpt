@@ -20,6 +20,8 @@ import modal
 VOLUME_NAME = "PLACEHOLDER"
 VOLUME_MOUNT_PATH = "/data"
 GPU = "PLACEHOLDER"  # e.g. modal.gpu.A100(count=1)
+WANDB_ENTITY = "PLACEHOLDER"  # Your wandb username or team
+WANDB_PROJECT = "PLACEHOLDER"  # Your wandb project name
 
 # =============================================================================
 # Modal Setup
@@ -64,6 +66,7 @@ def load_sft_dataset(path: str):
     image=image,
     volumes={VOLUME_MOUNT_PATH: volume},
     gpu=GPU,
+    secrets=[modal.Secret.from_name("wandb-secret")],
 )
 def train(
     model_path: str,
@@ -79,9 +82,15 @@ def train(
     gradient_accumulation_steps: int,
 ):
     """Run SFT training with LoRA on a frozen base model."""
+    import os
+
     from peft import LoraConfig
     from transformers import AutoModelForCausalLM, AutoTokenizer
     from trl import SFTConfig, SFTTrainer
+
+    # Configure wandb
+    os.environ["WANDB_ENTITY"] = WANDB_ENTITY
+    os.environ["WANDB_PROJECT"] = WANDB_PROJECT
 
     # Data
     dataset_train = load_sft_dataset(f"{VOLUME_MOUNT_PATH}/{data_path_train}")
