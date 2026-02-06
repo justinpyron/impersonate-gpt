@@ -67,26 +67,6 @@ st.set_page_config(page_title="ImpersonateGPT", layout="centered", page_icon="�
 st.title("ImpersonateGPT 🥸")
 with st.expander("What is this app?"):
     st.markdown(WHAT_IS_THIS_APP)
-footer_html = """
-    <style>
-        .footer {
-            position: fixed;
-            left: 0;
-            bottom: 0;
-            width: 100%;
-            height: 35px;
-            color: white;
-            background-color: #262730;
-            text-align: center;
-            padding: 2px;
-            opacity: 1;
-        }
-    </style>
-    <div class="footer">
-        <p>⚠️ It may take up to two minutes for the inference server to start after the first 'Generate text' button click.</p>
-    </div>
-"""
-st.markdown(footer_html, unsafe_allow_html=True)
 
 with st.form("inputs", enter_to_submit=False, border=False):
     text_seed = st.text_area(
@@ -141,4 +121,3 @@ if submitted and len(selected_writers) > 0:
                         num_tokens,
                     )
                 st.markdown(generated_text)
-st.markdown(footer_html, unsafe_allow_html=True)
