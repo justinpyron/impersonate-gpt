@@ -133,10 +133,13 @@ def train(
         gradient_accumulation_steps=gradient_accumulation_steps,
         learning_rate=learning_rate,
         max_length=max_length,
-        eval_strategy="epoch",
-        save_strategy="epoch",
-        load_best_model_at_end=True,
         completion_only_loss=True,
+        eval_strategy="steps",
+        eval_steps=0.25,
+        logging_strategy="steps",
+        logging_steps=0.1,
+        save_strategy="best",
+        load_best_model_at_end=True,
         report_to="wandb",
     )
 
