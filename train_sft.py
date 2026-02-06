@@ -20,7 +20,6 @@ import modal
 VOLUME_NAME = "PLACEHOLDER"
 VOLUME_MOUNT_PATH = "/data"
 GPU = "PLACEHOLDER"  # e.g. modal.gpu.A100(count=1)
-TIMEOUT_SECONDS = 3600  # TODO: Remove this
 
 # =============================================================================
 # Modal Setup
@@ -65,7 +64,6 @@ def load_sft_dataset(path: str):
     image=image,
     volumes={VOLUME_MOUNT_PATH: volume},
     gpu=GPU,
-    timeout=TIMEOUT_SECONDS,
 )
 def train(
     model_path: str,
@@ -166,7 +164,7 @@ def main(
     print(
         f"  Training: epochs={num_epochs}, batch_size={batch_size}, lr={learning_rate}"
     )
-    print("=" * 80)
+    print("-" * 80)
 
     call = train.spawn(
         model_path=model_path,
