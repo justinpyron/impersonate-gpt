@@ -20,7 +20,7 @@ import modal
 VOLUME_NAME = "PLACEHOLDER"
 VOLUME_MOUNT_PATH = "/data"
 GPU = "PLACEHOLDER"  # e.g. modal.gpu.A100(count=1)
-TIMEOUT_SECONDS = 3600
+TIMEOUT_SECONDS = 3600  # TODO: Remove this
 
 # =============================================================================
 # Modal Setup
@@ -156,7 +156,19 @@ def main(
     gradient_accumulation_steps: int = 4,
 ):
     """Launch SFT training on Modal. All paths are relative to the volume root."""
-    train.remote(
+    print("=" * 80)
+    print("Launching SFT training job on Modal...")
+    print(f"  Model: {model_path}")
+    print(f"  Train data: {data_path_train}")
+    print(f"  Val data: {data_path_val}")
+    print(f"  Output: {output_dir}")
+    print(f"  LoRA config: r={lora_r}, alpha={lora_alpha}")
+    print(
+        f"  Training: epochs={num_epochs}, batch_size={batch_size}, lr={learning_rate}"
+    )
+    print("=" * 80)
+
+    call = train.spawn(
         model_path=model_path,
         data_path_train=data_path_train,
         data_path_val=data_path_val,
@@ -169,3 +181,14 @@ def main(
         max_seq_length=max_seq_length,
         gradient_accumulation_steps=gradient_accumulation_steps,
     )
+
+    print()
+    print(f"✓ Training job launched successfully!")
+    print(f"  Job ID: {call.object_id}")
+    print()
+    print("You can safely close this terminal. The job will continue running on Modal.")
+    print()
+    print("To check job status:")
+    print(f"  • Web UI: https://modal.com/apps")
+    print(f"  • CLI: modal app logs {app.name}")
+    print("=" * 80)
