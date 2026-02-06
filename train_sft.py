@@ -1,11 +1,10 @@
 """
 SFT training with LoRA on Modal.
 
-Launches a fire-and-forget training job that runs in the cloud. The job
-continues even if you disconnect. Logs are sent to Weights & Biases.
+Trains LoRA adapters on a frozen base model. Logs are sent to Weights & Biases.
 
-Usage:
-    modal run train_sft.py \
+Usage (fire-and-forget with --detach):
+    modal run --detach train_sft.py \
         --model-path <path-in-volume> \
         --data-path-train <path-in-volume> \
         --data-path-val <path-in-volume> \
@@ -13,10 +12,12 @@ Usage:
         [--lora-r 16] \
         [--lora-alpha 32] \
         [--learning-rate 0.0002] \
-        [--num-epochs 3] \
+        [--num-epochs 2] \
         [--batch-size 4] \
         [--max-seq-length 2048] \
         [--gradient-accumulation-steps 4]
+
+The --detach flag allows you to close your terminal while training continues.
 """
 
 import json
@@ -168,7 +169,7 @@ def main(
     lora_r: int = 16,
     lora_alpha: int = 32,
     learning_rate: float = 2e-4,
-    num_epochs: int = 3,
+    num_epochs: int = 2,
     batch_size: int = 4,
     max_seq_length: int = 2048,
     gradient_accumulation_steps: int = 4,
@@ -184,9 +185,9 @@ def main(
     print(
         f"  Training: epochs={num_epochs}, batch_size={batch_size}, lr={learning_rate}"
     )
-    print("-" * 80)
+    print("-" * 40)
 
-    call = train.spawn(
+    train.remote(
         model_path=model_path,
         data_path_train=data_path_train,
         data_path_val=data_path_val,
@@ -199,14 +200,3 @@ def main(
         max_seq_length=max_seq_length,
         gradient_accumulation_steps=gradient_accumulation_steps,
     )
-
-    print()
-    print(f"✓ Training job launched successfully!")
-    print(f"  Job ID: {call.object_id}")
-    print()
-    print("You can safely close this terminal. The job will continue running on Modal.")
-    print()
-    print("To check job status:")
-    print(f"  • Web UI: https://modal.com/apps")
-    print(f"  • CLI: modal app logs {app.name}")
-    print("=" * 80)
