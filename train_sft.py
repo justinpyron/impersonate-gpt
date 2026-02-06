@@ -8,16 +8,16 @@ Usage:
         --model-path <path-in-volume> \
         --data-path-train <path-in-volume> \
         --data-path-val <path-in-volume> \
-        --output-dir <path-in-volume> \
+        --name <run-name> \
         [--lora-r 16] \
         [--lora-alpha 32] \
         [--learning-rate 0.0002] \
-        [--num-epochs 2] \
+        [--num-epochs 1] \
         [--batch-size 4] \
-        [--gradient-accumulation-steps 4] \
         [--max-length 2048] \
+        [--gradient-accumulation-steps 4] \
         [--logging-steps 0.1] \
-        [--eval-steps 0.25]
+        [--eval-steps 0.5]
 """
 
 import json
@@ -31,6 +31,7 @@ import modal
 APP_NAME = "impersonate-gpt-sft"
 VOLUME_NAME = "impersonate-gpt"
 VOLUME_MOUNT_PATH = "/data"
+WEIGHTS_DIR = "weights_sft"
 GPU = "A10"
 WANDB_ENTITY = "pyron"
 WANDB_PROJECT = "impersonate-gpt-sft"
@@ -84,7 +85,7 @@ def train(
     model_path: str,
     data_path_train: str,
     data_path_val: str,
-    output_dir: str,
+    name: str,
     lora_r: int,
     lora_alpha: int,
     learning_rate: float,
@@ -97,10 +98,16 @@ def train(
 ):
     """Run SFT training with LoRA on a frozen base model."""
     import os
+    from datetime import datetime, timezone
 
     from peft import LoraConfig
     from transformers import AutoModelForCausalLM, AutoTokenizer
     from trl import SFTConfig, SFTTrainer
+
+    # Generate run name with timestamp
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    run_name = f"{name}_{timestamp}"
+    output_dir_full = f"{VOLUME_MOUNT_PATH}/{WEIGHTS_DIR}/{run_name}"
 
     # Configure wandb
     os.environ["WANDB_ENTITY"] = WANDB_ENTITY
@@ -128,9 +135,9 @@ def train(
     )
 
     # Training config
-    output_dir_full = f"{VOLUME_MOUNT_PATH}/{output_dir}"
     config_training = SFTConfig(
         output_dir=output_dir_full,
+        run_name=run_name,
         learning_rate=learning_rate,
         num_train_epochs=num_epochs,
         per_device_train_batch_size=batch_size,
@@ -171,7 +178,7 @@ def main(
     model_path: str,
     data_path_train: str,
     data_path_val: str,
-    output_dir: str,
+    name: str,
     lora_r: int = 16,
     lora_alpha: int = 32,
     learning_rate: float = 2e-4,
@@ -188,7 +195,7 @@ def main(
     print(f"  Model: {model_path}")
     print(f"  Train data: {data_path_train}")
     print(f"  Val data: {data_path_val}")
-    print(f"  Output: {output_dir}")
+    print(f"  Run name: {name}")
     print(f"  LoRA config: r={lora_r}, alpha={lora_alpha}")
     print(
         f"  Training: epochs={num_epochs}, batch_size={batch_size}, lr={learning_rate}"
@@ -199,7 +206,7 @@ def main(
         model_path=model_path,
         data_path_train=data_path_train,
         data_path_val=data_path_val,
-        output_dir=output_dir,
+        name=name,
         lora_r=lora_r,
         lora_alpha=lora_alpha,
         learning_rate=learning_rate,
