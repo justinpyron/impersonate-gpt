@@ -11,7 +11,10 @@ VOLUME_MOUNT_PATH = "/data"
 MODEL_FOLDER_PATH = "gemma-3-270m"
 ADAPTERS = {
     "darwin": "weights_sft/darwin_20260206T162059Z",
+    "dickens": "weights_sft/dickens_20260206T162433Z",
     "dostoevsky": "weights_sft/dostoevsky_20260206T162221Z",
+    "doyle": "weights_sft/doyle_20260206T162518Z",
+    "fitzgerald": "weights_sft/fitzgerald_20260206T162358Z",
     "twain": "weights_sft/twain_20260206T145643Z",
 }
 SCALEDOWN_WINDOW_SECONDS = 600

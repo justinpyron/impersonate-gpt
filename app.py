@@ -9,8 +9,8 @@ BACKEND_URL = os.getenv("BACKEND_URL")
 # Writers/adapters available
 WRITERS = [
     "Base",
-    "Darwin",
     "Dostoevsky",
+    "Fitzgerald",
     "Twain",
 ]
 WHAT_IS_THIS_APP = """
