@@ -1,6 +1,6 @@
 import os
 
-import requests
+import httpx
 import streamlit as st
 
 # Backend configuration
@@ -49,7 +49,7 @@ def ping_api(
         raise ValueError("BACKEND_URL environment variable is not set")
 
     # Make request to the generate endpoint
-    response = requests.post(
+    response = httpx.post(
         url=f"{BACKEND_URL}/generate/{adapter_name}",
         headers={"Content-Type": "application/json"},
         json={
