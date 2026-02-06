@@ -15,13 +15,13 @@ WRITERS = [
 ]
 WHAT_IS_THIS_APP = """
 This app demos LoRA adapters fine-tuned on a base language model to mimic three famous writers with distinctive voices:
-1. Charles Darwin
-2. Fyodor Dostoevsky
+1. Fyodor Dostoevsky
+2. F. Scott Fitzgerald
 3. Mark Twain
 
 For each author, I obtained a dataset of books from [Project Gutenberg](https://www.gutenberg.org) and fine-tuned LoRA adapters using supervised fine-tuning.
 
-You can also select "Base" to generate text using the base model without any author-specific adaptation.
+You can also select "Base" to generate text using the base LLM without author-specific tuning.
 
 Source code 👉 [GitHub](https://github.com/justinpyron/impersonate-gpt)
 """
