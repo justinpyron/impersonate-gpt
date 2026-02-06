@@ -75,10 +75,10 @@ class Server:
 
     def generate(
         self,
+        adapter_name: str,
         text: str,
         temperature: float,
         num_tokens: int,
-        adapter_name: str,
     ):
         """
         Generate text continuation, yielding token chunks as they are produced.
@@ -164,10 +164,10 @@ class Server:
 
             return StreamingResponse(
                 self.generate(
+                    adapter_name=adapter_name,
                     text=request.text,
                     temperature=request.temperature,
                     num_tokens=request.num_tokens,
-                    adapter_name=adapter_name,
                 ),
                 media_type="text/plain",
             )
