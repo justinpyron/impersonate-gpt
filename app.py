@@ -105,8 +105,8 @@ with st.form("inputs", enter_to_submit=False, border=False):
             help="The number of tokens to generate",
         )
     submitted = st.form_submit_button(
-        "Generate text", use_container_width=True, type="primary"
-    )  # TODO: Change to just "Generate"
+        "Generate", use_container_width=True, type="primary"
+    )
 
 if submitted and len(selected_writers) > 0:
     columns = st.columns(len(selected_writers))
