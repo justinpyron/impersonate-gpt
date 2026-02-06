@@ -57,6 +57,7 @@ def ping_api(
             "temperature": temperature,
             "num_tokens": int(num_tokens),
         },
+        timeout=300.0,
     )
     response.raise_for_status()
     return response.json()["generated_text"]
