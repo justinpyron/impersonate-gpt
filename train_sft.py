@@ -127,12 +127,12 @@ def train(
     output_dir_full = f"{VOLUME_MOUNT_PATH}/{output_dir}"
     config_training = SFTConfig(
         output_dir=output_dir_full,
+        learning_rate=learning_rate,
         num_train_epochs=num_epochs,
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size,
-        gradient_accumulation_steps=gradient_accumulation_steps,
-        learning_rate=learning_rate,
         max_length=max_length,
+        gradient_accumulation_steps=gradient_accumulation_steps,
         completion_only_loss=True,
         eval_strategy="steps",
         eval_steps=0.25,
