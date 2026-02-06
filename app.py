@@ -1,3 +1,4 @@
+import json
 import os
 
 import httpx
@@ -27,14 +28,14 @@ Source code 👉 [GitHub](https://github.com/justinpyron/impersonate-gpt)
 """
 
 
-def ping_api(
+def stream_api(
     adapter_name: str,
     text: str,
     temperature: float = 1,
     num_tokens: float = 70,
-) -> str:
+):
     """
-    Call the backend to generate text.
+    Stream generated text from the backend as token chunks.
 
     Args:
         adapter_name: The adapter to use (base, darwin, dostoevsky, twain)
@@ -42,25 +43,29 @@ def ping_api(
         temperature: Sampling temperature
         num_tokens: Number of tokens to generate
 
-    Returns:
-        Generated text string
+    Yields:
+        Token chunks as strings
     """
     if not BACKEND_URL:
         raise ValueError("BACKEND_URL environment variable is not set")
 
-    # Make request to the generate endpoint
-    response = httpx.post(
-        url=f"{BACKEND_URL}/generate/{adapter_name}",
-        headers={"Content-Type": "application/json"},
+    with httpx.stream(
+        "POST",
+        f"{BACKEND_URL}/generate/{adapter_name}",
         json={
             "text": text,
             "temperature": temperature,
             "num_tokens": int(num_tokens),
         },
         timeout=300.0,
-    )
-    response.raise_for_status()
-    return response.json()["generated_text"]
+    ) as response:
+        response.raise_for_status()
+        for line in response.iter_lines():
+            if line.startswith("data: "):
+                data = line[len("data: ") :]
+                if data == "[DONE]":
+                    break
+                yield json.loads(data)["token"]
 
 
 st.set_page_config(page_title="ImpersonateGPT", layout="centered", page_icon="🥸")
@@ -116,11 +121,11 @@ if submitted and len(selected_writers) > 0:
         with col:
             with st.container(border=True):
                 st.markdown(f"#### {writer} says...")
-                with st.spinner("Computing..."):
-                    generated_text = ping_api(
+                st.write_stream(
+                    stream_api(
                         writer.lower(),
                         text_seed,
                         temperature,
                         num_tokens,
                     )
-                st.markdown(generated_text)
+                )
