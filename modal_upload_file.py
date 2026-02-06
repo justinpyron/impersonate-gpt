@@ -73,7 +73,8 @@ def upload_file(local_path: str, volume_name: str, remote_path: str):
 
     # Upload the file
     try:
-        volume.put_file(local_path, remote_path)
+        with volume.batch_upload() as batch:
+            batch.put_file(local_path, remote_path)
         print("-" * 60)
         print(f"✓ Successfully uploaded file to volume '{volume_name}'")
 
