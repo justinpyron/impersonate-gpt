@@ -75,7 +75,7 @@ with st.form("inputs", enter_to_submit=False, border=False):
         "",
         help="The app will generate text starting from what you enter here",
     )
-    col1, col2 = st.columns([3, 2])
+    col1, col2, col3 = st.columns([2.5, 1, 1])
     with col1:
         selected_writers = st.segmented_control(
             "Writers to mimic",
@@ -87,25 +87,23 @@ with st.form("inputs", enter_to_submit=False, border=False):
             w for w in WRITERS if w in selected_writers
         ]  # Preserve order
     with col2:
-        with st.expander(
-            "Settings"
-        ):  # TODO: Don't put these in an expander; put each in its own column
-            temperature = st.slider(
-                "Temperature",
-                min_value=0.1,
-                max_value=2.0,
-                step=0.1,
-                value=1.0,
-                help="Controls randomness of generated text. Lower values are less random.",
-            )
-            num_tokens = st.slider(
-                "Number of tokens",
-                min_value=10,
-                max_value=200,
-                step=10,
-                value=80,
-                help="The number of tokens to generate",
-            )
+        temperature = st.slider(
+            "Temperature",
+            min_value=0.1,
+            max_value=2.0,
+            step=0.1,
+            value=1.0,
+            help="Controls randomness of generated text. Lower values are less random.",
+        )
+    with col3:
+        num_tokens = st.slider(
+            "Number of tokens",
+            min_value=10,
+            max_value=200,
+            step=10,
+            value=80,
+            help="The number of tokens to generate",
+        )
     submitted = st.form_submit_button(
         "Generate text", use_container_width=True, type="primary"
     )  # TODO: Change to just "Generate"
