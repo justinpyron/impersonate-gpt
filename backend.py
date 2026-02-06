@@ -131,7 +131,10 @@ class Server:
     @modal.asgi_app()
     def fastapi_server(self):
         """Create and configure the FastAPI application."""
+        import json
+
         from fastapi import FastAPI, HTTPException
+        from fastapi.responses import StreamingResponse
         from pydantic import BaseModel
 
         class GenerateRequest(BaseModel):
@@ -139,38 +142,39 @@ class Server:
             temperature: float
             num_tokens: int
 
-        class GenerateResponse(BaseModel):
-            generated_text: str
-
         server = FastAPI(title="ImpersonateGPT API")
 
-        @server.post("/generate/{adapter_name}", response_model=GenerateResponse)
+        @server.post("/generate/{adapter_name}")
         def generate_endpoint(
             adapter_name: str, request: GenerateRequest
-        ) -> GenerateResponse:
+        ) -> StreamingResponse:
             """
-            Generate text continuation from seed text using specified adapter.
+            Stream generated text as Server-Sent Events.
 
             Args:
-                adapter_name: Name of the LoRA adapter to use (darwin, dostoevsky, twain) or "base" for base model
+                adapter_name: Name of the LoRA adapter or "base"
                 request: Request containing seed text and generation parameters
 
             Returns:
-                Response with the full generated text
+                SSE stream of token chunks
             """
             if adapter_name != "base" and adapter_name not in ADAPTERS:
                 raise HTTPException(
                     status_code=404,
-                    detail=f"Adapter '{adapter_name}' not found. Available adapters: {sorted(list(ADAPTERS.keys()))}. Or 'base' for base model.",
+                    detail=f"Adapter '{adapter_name}' not found. Available: {sorted(list(ADAPTERS.keys()))} or 'base'.",
                 )
 
-            generated_text = self.generate(
-                text=request.text,
-                temperature=request.temperature,
-                num_tokens=request.num_tokens,
-                adapter_name=adapter_name,
-            )
-            return GenerateResponse(generated_text=generated_text)
+            def event_stream():
+                for chunk in self.generate(
+                    text=request.text,
+                    temperature=request.temperature,
+                    num_tokens=request.num_tokens,
+                    adapter_name=adapter_name,
+                ):
+                    yield f"data: {json.dumps({'token': chunk})}\n\n"
+                yield "data: [DONE]\n\n"
+
+            return StreamingResponse(event_stream(), media_type="text/event-stream")
 
         @server.get("/adapters")
         def list_adapters():
