@@ -14,7 +14,7 @@ Usage:
         [--learning-rate 0.0002] \
         [--num-epochs 2] \
         [--batch-size 4] \
-        [--max-seq-length 2048] \
+        [--max-length 2048] \
         [--gradient-accumulation-steps 4]
 """
 
@@ -88,7 +88,7 @@ def train(
     learning_rate: float,
     num_epochs: int,
     batch_size: int,
-    max_seq_length: int,
+    max_length: int,
     gradient_accumulation_steps: int,
 ):
     """Run SFT training with LoRA on a frozen base model."""
@@ -132,7 +132,7 @@ def train(
         per_device_eval_batch_size=batch_size,
         gradient_accumulation_steps=gradient_accumulation_steps,
         learning_rate=learning_rate,
-        max_seq_length=max_seq_length,
+        max_length=max_length,
         eval_strategy="epoch",
         save_strategy="epoch",
         load_best_model_at_end=True,
@@ -169,7 +169,7 @@ def main(
     learning_rate: float = 2e-4,
     num_epochs: int = 2,
     batch_size: int = 4,
-    max_seq_length: int = 2048,
+    max_length: int = 2048,
     gradient_accumulation_steps: int = 4,
 ):
     """Launch SFT training on Modal. All paths are relative to the volume root."""
@@ -195,6 +195,6 @@ def main(
         learning_rate=learning_rate,
         num_epochs=num_epochs,
         batch_size=batch_size,
-        max_seq_length=max_seq_length,
+        max_length=max_length,
         gradient_accumulation_steps=gradient_accumulation_steps,
     )
