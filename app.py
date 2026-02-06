@@ -1,4 +1,3 @@
-import json
 import os
 
 import httpx
@@ -60,12 +59,8 @@ def stream_api(
         timeout=300.0,
     ) as response:
         response.raise_for_status()
-        for line in response.iter_lines():
-            if line.startswith("data: "):
-                data = line[len("data: ") :]
-                if data == "[DONE]":
-                    break
-                yield json.loads(data)["token"]
+        for chunk in response.iter_text():
+            yield chunk
 
 
 st.set_page_config(page_title="ImpersonateGPT", layout="centered", page_icon="🥸")
