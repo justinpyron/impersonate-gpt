@@ -10,10 +10,10 @@ VOLUME_NAME = "impersonate-gpt"
 VOLUME_MOUNT_PATH = "/data"
 MODEL_FOLDER_PATH = "gemma-3-270m"
 SCALEDOWN_WINDOW_SECONDS = 60
-ADAPTER_PATHS = {
-    "darwin": "PLACEHOLDER_PATH",
-    "dostoevsky": "PLACEHOLDER_PATH",
-    "twain": "PLACEHOLDER_PATH",
+ADAPTERS = {
+    "darwin": "weights_sft/darwin_20260206T162059Z",
+    "dostoevsky": "weights_sft/dostoevsky_20260206T162221Z",
+    "twain": "weights_sft/twain_20260206T145643Z",
 }
 
 # =============================================================================
@@ -23,7 +23,6 @@ ADAPTER_PATHS = {
 app = modal.App("impersonate-gpt")
 
 image = modal.Image.debian_slim(python_version="3.12").pip_install(
-    "torch==2.10.0",  # TODO: Remove
     "transformers==4.55.4",
     "peft==0.14.0",
     "fastapi==0.128.0",
@@ -62,16 +61,16 @@ class Server:
         base_model.eval()
 
         # Load first adapter
-        adapter_names = list(ADAPTER_PATHS.keys())
+        adapter_names = sorted(list(ADAPTERS.keys)())
         first_adapter_name = adapter_names[0]
-        first_adapter_path = f"{VOLUME_MOUNT_PATH}/{ADAPTER_PATHS[first_adapter_name]}"
+        first_adapter_path = f"{VOLUME_MOUNT_PATH}/{ADAPTERS[first_adapter_name]}"
         self.model = PeftModel.from_pretrained(
             base_model, first_adapter_path, adapter_name=first_adapter_name
         )
 
         # Load remaining adapters
         for adapter_name in adapter_names[1:]:
-            adapter_path = f"{VOLUME_MOUNT_PATH}/{ADAPTER_PATHS[adapter_name]}"
+            adapter_path = f"{VOLUME_MOUNT_PATH}/{ADAPTERS[adapter_name]}"
             self.model.load_adapter(adapter_path, adapter_name=adapter_name)
 
     def generate(
@@ -143,10 +142,10 @@ class Server:
             Returns:
                 Response with the full generated text
             """
-            if adapter_name not in ADAPTER_PATHS:
+            if adapter_name not in ADAPTERS:
                 raise HTTPException(
                     status_code=404,
-                    detail=f"Adapter '{adapter_name}' not found. Available adapters: {list(ADAPTER_PATHS.keys())}",
+                    detail=f"Adapter '{adapter_name}' not found. Available adapters: {sorted(list(ADAPTERS.keys()))}",
                 )
 
             generated_text = self.generate(
@@ -160,7 +159,7 @@ class Server:
         @server.get("/adapters")
         def list_adapters():
             """List all available adapters."""
-            return {"adapters": list(ADAPTER_PATHS.keys())}
+            return {"adapters": sorted(list(ADAPTERS.keys()))}
 
         @server.get("/health")
         async def health_check():
