@@ -1,12 +1,22 @@
 """
 SFT training with LoRA on Modal.
 
+Launches a fire-and-forget training job that runs in the cloud. The job
+continues even if you disconnect. Logs are sent to Weights & Biases.
+
 Usage:
     modal run train_sft.py \
         --model-path <path-in-volume> \
-        --train-data <path-in-volume> \
-        --val-data <path-in-volume> \
-        --output-dir <path-in-volume>
+        --data-path-train <path-in-volume> \
+        --data-path-val <path-in-volume> \
+        --output-dir <path-in-volume> \
+        [--lora-r 16] \
+        [--lora-alpha 32] \
+        [--learning-rate 0.0002] \
+        [--num-epochs 3] \
+        [--batch-size 4] \
+        [--max-seq-length 2048] \
+        [--gradient-accumulation-steps 4]
 """
 
 import json
