@@ -9,12 +9,12 @@ import modal
 VOLUME_NAME = "impersonate-gpt"
 VOLUME_MOUNT_PATH = "/data"
 MODEL_FOLDER_PATH = "gemma-3-270m"
-SCALEDOWN_WINDOW_SECONDS = 60
 ADAPTERS = {
     "darwin": "weights_sft/darwin_20260206T162059Z",
     "dostoevsky": "weights_sft/dostoevsky_20260206T162221Z",
     "twain": "weights_sft/twain_20260206T145643Z",
 }
+SCALEDOWN_WINDOW_SECONDS = 60
 
 # =============================================================================
 # Modal Setup
@@ -87,23 +87,31 @@ class Server:
             text: The seed text to continue
             temperature: Temperature for sampling (higher = more random)
             num_tokens: Number of new tokens to generate
-            adapter_name: Name of the LoRA adapter to use
+            adapter_name: Name of the LoRA adapter to use, or "base" for base model
 
         Returns:
             The full generated text (seed + continuation)
         """
-        # Switch to the requested adapter
-        self.model.set_adapter(adapter_name)
-
         # Tokenize input
         input_tokens = self.tokenizer(text, return_tensors="pt")
 
         # Generate continuation
-        output_tokens = self.model.generate(
-            **input_tokens,
-            max_new_tokens=num_tokens,
-            temperature=temperature,
-        )
+        if adapter_name == "base":
+            # Use base model without any adapter
+            with self.model.disable_adapter():
+                output_tokens = self.model.generate(
+                    **input_tokens,
+                    max_new_tokens=num_tokens,
+                    temperature=temperature,
+                )
+        else:
+            # Use specified adapter
+            self.model.set_adapter(adapter_name)
+            output_tokens = self.model.generate(
+                **input_tokens,
+                max_new_tokens=num_tokens,
+                temperature=temperature,
+            )
 
         # Decode and return full text
         generated_text = self.tokenizer.decode(
@@ -136,16 +144,16 @@ class Server:
             Generate text continuation from seed text using specified adapter.
 
             Args:
-                adapter_name: Name of the LoRA adapter to use (darwin, dostoevsky, twain)
+                adapter_name: Name of the LoRA adapter to use (darwin, dostoevsky, twain) or "base" for base model
                 request: Request containing seed text and generation parameters
 
             Returns:
                 Response with the full generated text
             """
-            if adapter_name not in ADAPTERS:
+            if adapter_name != "base" and adapter_name not in ADAPTERS:
                 raise HTTPException(
                     status_code=404,
-                    detail=f"Adapter '{adapter_name}' not found. Available adapters: {sorted(list(ADAPTERS.keys()))}",
+                    detail=f"Adapter '{adapter_name}' not found. Available adapters: {sorted(list(ADAPTERS.keys()))}. Or 'base' for base model.",
                 )
 
             generated_text = self.generate(
