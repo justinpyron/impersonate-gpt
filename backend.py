@@ -10,7 +10,6 @@ VOLUME_NAME = "impersonate-gpt"
 VOLUME_MOUNT_PATH = "/data"
 MODEL_FOLDER_PATH = "gemma-3-270m"
 SCALEDOWN_WINDOW_SECONDS = 60
-GPU = None
 
 # =============================================================================
 # Modal Setup
@@ -21,7 +20,6 @@ app = modal.App("impersonate-gpt")
 image = modal.Image.debian_slim(python_version="3.12").pip_install(
     "torch==2.10.0",
     "transformers==4.55.4",
-    "accelerate==1.12.0",
     "fastapi==0.128.0",
     "pydantic==2.12.5",
 )
@@ -37,7 +35,6 @@ volume = modal.Volume.from_name(VOLUME_NAME)
 @app.cls(
     image=image,
     volumes={VOLUME_MOUNT_PATH: volume},
-    gpu=GPU,
     scaledown_window=SCALEDOWN_WINDOW_SECONDS,
 )
 class Server:
@@ -46,19 +43,15 @@ class Server:
     @modal.enter()
     def load_model_and_tokenizer(self):
         """Load model and tokenizer on container startup."""
-        import torch
         from transformers import AutoModelForCausalLM, AutoTokenizer
 
         model_path = f"{VOLUME_MOUNT_PATH}/{MODEL_FOLDER_PATH}"
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
         # Load tokenizer
         self.tokenizer = AutoTokenizer.from_pretrained(model_path)
 
-        # Load model directly to GPU
-        self.model = AutoModelForCausalLM.from_pretrained(model_path, device_map="auto")
-
-        # Set to eval mode
+        # Load model to CPU
+        self.model = AutoModelForCausalLM.from_pretrained(model_path)
         self.model.eval()
 
     def generate(
@@ -78,17 +71,17 @@ class Server:
         Returns:
             The full generated text (seed + continuation)
         """
-        # Tokenize input and move to GPU
-        input_tokens = self.tokenizer(text, return_tensors="pt").to(self.device)
+        # Tokenize input
+        input_tokens = self.tokenizer(text, return_tensors="pt")
 
-        # Generate continuation (output stays on GPU)
+        # Generate continuation
         output_tokens = self.model.generate(
             **input_tokens,
             max_new_tokens=num_tokens,
             temperature=temperature,
         )
 
-        # Decode and return full text (decoder handles device transfer internally)
+        # Decode and return full text
         generated_text = self.tokenizer.decode(
             output_tokens[0], skip_special_tokens=True
         )
