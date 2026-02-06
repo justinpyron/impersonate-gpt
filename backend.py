@@ -23,10 +23,10 @@ SCALEDOWN_WINDOW_SECONDS = 60
 app = modal.App("impersonate-gpt")
 
 image = modal.Image.debian_slim(python_version="3.12").pip_install(
-    "transformers==4.55.4",
-    "peft==0.14.0",
-    "fastapi==0.128.0",
-    "pydantic==2.12.5",
+    "transformers",
+    "peft",
+    "fastapi",
+    "pydantic",
 )
 
 volume = modal.Volume.from_name(VOLUME_NAME)
@@ -61,7 +61,7 @@ class Server:
         base_model.eval()
 
         # Load first adapter
-        adapter_names = sorted(list(ADAPTERS.keys)())
+        adapter_names = sorted(list(ADAPTERS.keys()))
         first_adapter_name = adapter_names[0]
         first_adapter_path = f"{VOLUME_MOUNT_PATH}/{ADAPTERS[first_adapter_name]}"
         self.model = PeftModel.from_pretrained(
