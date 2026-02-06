@@ -14,7 +14,7 @@ ADAPTERS = {
     "dostoevsky": "weights_sft/dostoevsky_20260206T162221Z",
     "twain": "weights_sft/twain_20260206T145643Z",
 }
-SCALEDOWN_WINDOW_SECONDS = 60
+SCALEDOWN_WINDOW_SECONDS = 300
 
 # =============================================================================
 # Modal Setup
