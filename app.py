@@ -3,10 +3,7 @@ import os
 import httpx
 import streamlit as st
 
-# Backend configuration
 BACKEND_URL = os.getenv("BACKEND_URL")
-
-# Writers/adapters available
 WRITERS = [
     "Base",
     "Dostoevsky",
