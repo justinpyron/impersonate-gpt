@@ -33,6 +33,7 @@ VOLUME_NAME = "impersonate-gpt"
 VOLUME_MOUNT_PATH = "/data"
 WEIGHTS_DIR = "weights_sft"
 GPU = "A10"
+TIMEOUT_SECONDS = 24 * 60 * 60
 WANDB_ENTITY = "pyron"
 WANDB_PROJECT = "impersonate-gpt-sft"
 
@@ -79,6 +80,7 @@ def load_sft_dataset(path: str):
     image=image,
     volumes={VOLUME_MOUNT_PATH: volume},
     gpu=GPU,
+    timeout=TIMEOUT_SECONDS,
     secrets=[modal.Secret.from_name("wandb-secret")],
 )
 def train(
