@@ -9,8 +9,15 @@ import modal
 VOLUME_NAME = "impersonate-gpt"
 VOLUME_MOUNT_PATH = "/data"
 MODEL_FOLDER_PATH = "gemma-3-270m"
-SCALEDOWN_WINDOW_SECONDS = 60
-GPU = None
+ADAPTERS = {
+    "darwin": "weights_sft/darwin_20260206T162059Z",
+    "dickens": "weights_sft/dickens_20260206T162433Z",
+    "dostoevsky": "weights_sft/dostoevsky_20260206T162221Z",
+    "doyle": "weights_sft/doyle_20260206T162518Z",
+    "fitzgerald": "weights_sft/fitzgerald_20260206T162358Z",
+    "twain": "weights_sft/twain_20260206T145643Z",
+}
+SCALEDOWN_WINDOW_SECONDS = 600
 
 # =============================================================================
 # Modal Setup
@@ -19,11 +26,10 @@ GPU = None
 app = modal.App("impersonate-gpt")
 
 image = modal.Image.debian_slim(python_version="3.12").pip_install(
-    "torch==2.10.0",
-    "transformers==4.55.4",
-    "accelerate==1.12.0",
-    "fastapi==0.128.0",
-    "pydantic==2.12.5",
+    "transformers",
+    "peft",
+    "fastapi",
+    "pydantic",
 )
 
 volume = modal.Volume.from_name(VOLUME_NAME)
@@ -37,7 +43,6 @@ volume = modal.Volume.from_name(VOLUME_NAME)
 @app.cls(
     image=image,
     volumes={VOLUME_MOUNT_PATH: volume},
-    gpu=GPU,
     scaledown_window=SCALEDOWN_WINDOW_SECONDS,
 )
 class Server:
@@ -46,87 +51,91 @@ class Server:
     @modal.enter()
     def load_model_and_tokenizer(self):
         """Load model and tokenizer on container startup."""
-        import time
-
-        import torch
+        from peft import PeftModel
         from transformers import AutoModelForCausalLM, AutoTokenizer
 
-        start_total = time.time()
-
         model_path = f"{VOLUME_MOUNT_PATH}/{MODEL_FOLDER_PATH}"
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
-
-        print(f"[TIMING] (Loading) Device: {self.device}")
 
         # Load tokenizer
-        start = time.time()
         self.tokenizer = AutoTokenizer.from_pretrained(model_path)
-        print(f"[TIMING] (Loading) Tokenizer loaded in {time.time() - start:.2f}s")
 
-        # Load model directly to GPU
-        start = time.time()
-        self.model = AutoModelForCausalLM.from_pretrained(model_path, device_map="auto")
-        print(f"[TIMING] (Loading) Model loaded in {time.time() - start:.2f}s")
+        # Load base model
+        base_model = AutoModelForCausalLM.from_pretrained(model_path)
+        base_model.eval()
 
-        # Set to eval mode
-        self.model.eval()
-
-        print(
-            f"[TIMING] (Loading) Total model loading: {time.time() - start_total:.2f}s"
+        # Load first adapter
+        adapter_names = sorted(list(ADAPTERS.keys()))
+        first_adapter_name = adapter_names[0]
+        first_adapter_path = f"{VOLUME_MOUNT_PATH}/{ADAPTERS[first_adapter_name]}"
+        self.model = PeftModel.from_pretrained(
+            base_model, first_adapter_path, adapter_name=first_adapter_name
         )
+
+        # Load remaining adapters
+        for adapter_name in adapter_names[1:]:
+            adapter_path = f"{VOLUME_MOUNT_PATH}/{ADAPTERS[adapter_name]}"
+            self.model.load_adapter(adapter_path, adapter_name=adapter_name)
 
     def generate(
         self,
+        adapter_name: str,
         text: str,
         temperature: float,
         num_tokens: int,
-    ) -> str:
+    ):
         """
-        Generate text continuation for a single input.
+        Generate text continuation, yielding token chunks as they are produced.
 
         Args:
             text: The seed text to continue
             temperature: Temperature for sampling (higher = more random)
             num_tokens: Number of new tokens to generate
+            adapter_name: Name of the LoRA adapter to use, or "base" for base model
 
-        Returns:
-            The full generated text (seed + continuation)
+        Yields:
+            Token chunks as strings
         """
-        import time
+        import threading
 
-        start_total = time.time()
+        from transformers import TextIteratorStreamer
 
-        # Tokenize input and move to GPU
-        start = time.time()
-        input_tokens = self.tokenizer(text, return_tensors="pt").to(self.device)
-        print(f"[TIMING] (Inference) Tokenization: {time.time() - start:.2f}s")
+        # Tokenize input
+        input_tokens = self.tokenizer(text, return_tensors="pt")
 
-        # Generate continuation (output stays on GPU)
-        start = time.time()
-        output_tokens = self.model.generate(
+        # Set up streamer
+        streamer = TextIteratorStreamer(
+            self.tokenizer, skip_prompt=True, skip_special_tokens=True
+        )
+        generation_kwargs = dict(
             **input_tokens,
+            streamer=streamer,
             max_new_tokens=num_tokens,
             temperature=temperature,
         )
-        print(f"[TIMING] (Inference) Generation: {time.time() - start:.2f}s")
 
-        # Decode and return full text (decoder handles device transfer internally)
-        start = time.time()
-        generated_text = self.tokenizer.decode(
-            output_tokens[0], skip_special_tokens=True
-        )
-        print(f"[TIMING] (Inference) Decoding: {time.time() - start:.2f}s")
+        # Run generation in background thread (model.generate blocks)
+        def _run():
+            if adapter_name == "base":
+                with self.model.disable_adapter():
+                    self.model.generate(**generation_kwargs)
+            else:
+                self.model.set_adapter(adapter_name)
+                self.model.generate(**generation_kwargs)
 
-        print(
-            f"[TIMING] (Inference) Total generate call: {time.time() - start_total:.2f}s"
-        )
+        thread = threading.Thread(target=_run)
+        thread.start()
 
-        return generated_text
+        # Yield token chunks as they arrive
+        for chunk in streamer:
+            yield chunk
+
+        thread.join()
 
     @modal.asgi_app()
     def fastapi_server(self):
         """Create and configure the FastAPI application."""
-        from fastapi import FastAPI
+        from fastapi import FastAPI, HTTPException
+        from fastapi.responses import StreamingResponse
         from pydantic import BaseModel
 
         class GenerateRequest(BaseModel):
@@ -134,28 +143,42 @@ class Server:
             temperature: float
             num_tokens: int
 
-        class GenerateResponse(BaseModel):
-            generated_text: str
-
         server = FastAPI(title="ImpersonateGPT API")
 
-        @server.post("/generate", response_model=GenerateResponse)
-        def generate_endpoint(request: GenerateRequest) -> GenerateResponse:
+        @server.post("/generate/{adapter_name}")
+        def generate_endpoint(
+            adapter_name: str, request: GenerateRequest
+        ) -> StreamingResponse:
             """
-            Generate text continuation from seed text.
+            Stream generated text as plain text token chunks.
 
             Args:
+                adapter_name: Name of the LoRA adapter or "base"
                 request: Request containing seed text and generation parameters
 
             Returns:
-                Response with the full generated text
+                Streaming plain text response of token chunks
             """
-            generated_text = self.generate(
-                text=request.text,
-                temperature=request.temperature,
-                num_tokens=request.num_tokens,
+            if adapter_name != "base" and adapter_name not in ADAPTERS:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Adapter '{adapter_name}' not found. Available: {sorted(list(ADAPTERS.keys()))} or 'base'.",
+                )
+
+            return StreamingResponse(
+                self.generate(
+                    adapter_name=adapter_name,
+                    text=request.text,
+                    temperature=request.temperature,
+                    num_tokens=request.num_tokens,
+                ),
+                media_type="text/plain",
             )
-            return GenerateResponse(generated_text=generated_text)
+
+        @server.get("/adapters")
+        def list_adapters():
+            """List all available adapters."""
+            return {"adapters": sorted(list(ADAPTERS.keys()))}
 
         @server.get("/health")
         async def health_check():
