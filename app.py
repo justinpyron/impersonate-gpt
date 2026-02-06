@@ -114,11 +114,23 @@ if submitted and len(selected_writers) > 0:
         with col:
             with st.container(border=True):
                 st.markdown(f"#### {writer} says...")
+                placeholder = st.empty()
+                placeholder.markdown("⏳ Waiting for server...")
+
+                def stream_with_status(generator, placeholder):
+                    for i, chunk in enumerate(generator):
+                        if i == 0:
+                            placeholder.empty()
+                        yield chunk
+
                 st.write_stream(
-                    stream_api(
-                        writer.lower(),
-                        text_seed,
-                        temperature,
-                        num_tokens,
+                    stream_with_status(
+                        stream_api(
+                            writer.lower(),
+                            text_seed,
+                            temperature,
+                            num_tokens,
+                        ),
+                        placeholder,
                     )
                 )
