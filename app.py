@@ -1,4 +1,5 @@
 import os
+from concurrent.futures import ThreadPoolExecutor
 
 import httpx
 import streamlit as st
@@ -55,11 +56,32 @@ def stream_api(
             yield chunk
 
 
+def _ping_backend():
+    httpx.get(f"{BACKEND_URL}/health", timeout=120)
+
+
+@st.fragment(run_every=2)
+def backend_status():
+    if st.session_state.get("backend_ready"):
+        return
+    st.info("Waking up the server. This may take a few seconds...", icon="⏳")
+    if st.session_state.warmup_future.done():
+        st.session_state.backend_ready = True
+        st.rerun(scope="fragment")
+
+
 st.set_page_config(page_title="ImpersonateGPT", layout="wide", page_icon="🥸")
+
+if "warmup_future" not in st.session_state:
+    executor = ThreadPoolExecutor(max_workers=1)
+    st.session_state.warmup_future = executor.submit(_ping_backend)
+    st.session_state.backend_ready = False
 
 st.title("ImpersonateGPT 🥸")
 with st.expander("What is this app?"):
     st.markdown(WHAT_IS_THIS_APP)
+
+backend_status()
 
 with st.form("inputs", enter_to_submit=False, border=False):
     text_seed = st.text_area(
