@@ -6,8 +6,6 @@ Text generation with LoRA adapters fine-tuned to mimic famous writers' styles.
 
 This project fine-tunes LoRA adapters on a base language model (Gemma-3-270M) to emulate the writing styles of classic authors. Training data comes from [Project Gutenberg](https://www.gutenberg.org) books.
 
-**Demo:** Coming soon (deployed via Google Cloud Run + Modal)
-
 ## Architecture
 
 - **Frontend:** Streamlit app deployed on Google Cloud Run
