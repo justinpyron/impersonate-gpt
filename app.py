@@ -11,14 +11,9 @@ WRITERS = [
     "Twain",
 ]
 WHAT_IS_THIS_APP = """
-This app demos LoRA adapters fine-tuned on a base language model to mimic three famous writers with distinctive voices:
-1. Fyodor Dostoevsky
-2. F. Scott Fitzgerald
-3. Mark Twain
+Start a sentence, and let Dostoevsky, Fitzgerald, or Mark Twain finish it for you.
 
-For each author, I obtained a dataset of books from [Project Gutenberg](https://www.gutenberg.org) and fine-tuned LoRA adapters using supervised fine-tuning.
-
-You can also select "Base" to generate text using the base LLM without author-specific tuning.
+This app uses LoRA adapters fine-tuned on each author's works from [Project Gutenberg](https://www.gutenberg.org) to capture their distinctive writing styles. You can also select "Base" to see completions from the original LLM ([Gemma-3-270M](https://huggingface.co/google/gemma-3-270m)) without any author-specific style tuning.
 
 Source code 👉 [GitHub](https://github.com/justinpyron/impersonate-gpt)
 """
@@ -70,7 +65,7 @@ with st.form("inputs", enter_to_submit=False, border=False):
     text_seed = st.text_area(
         "Enter seed text",
         "",
-        help="The app will generate text starting from what you enter here",
+        help="A completion for the text entered here will be generated",
     )
     col1, col2, col3 = st.columns([2.5, 1, 1])
     with col1:
