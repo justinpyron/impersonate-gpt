@@ -60,7 +60,7 @@ def stream_api(
             yield chunk
 
 
-st.set_page_config(page_title="ImpersonateGPT", layout="centered", page_icon="🥸")
+st.set_page_config(page_title="ImpersonateGPT", layout="wide", page_icon="🥸")
 
 st.title("ImpersonateGPT 🥸")
 with st.expander("What is this app?"):
